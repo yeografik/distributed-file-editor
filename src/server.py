@@ -5,12 +5,13 @@ import grpc
 from src.protos.generated import editor_pb2
 from src.protos.generated import editor_pb2_grpc
 
+
 class Editor(editor_pb2_grpc.EditorServicer):
     def SendCommand(self, request, context):
         print(request)
         print(context)
         status = 0
-        for ip0, port0 in neighbors: # broadcasting the cmd
+        for ip0, port0 in neighbors:  # broadcasting the cmd
             with grpc.insecure_channel(f"{ip0}:{port0}") as channel:
                 stub = editor_pb2_grpc.EditorStub(channel)
                 response = stub.SendCommand(editor_pb2.Command(request))
@@ -34,6 +35,7 @@ def serve():
     server.start()
     print("Server started, listening on " + port)
     server.wait_for_termination()
+
 
 if __name__ == '__main__':
     logging.basicConfig()
