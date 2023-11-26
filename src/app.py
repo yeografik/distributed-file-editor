@@ -2,8 +2,8 @@ import logging
 import sys
 
 import grpc
-from src.protos.generated import editor_pb2_grpc
-from src.protos.generated.editor_pb2 import INS, DEL, Command
+from protos.generated import editor_pb2_grpc
+from protos.generated.editor_pb2 import INS, DEL, Command
 
 
 def to_enum(operation):
