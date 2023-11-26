@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import editor_pb2 as editor__pb2
+import src.protos.generated.editor_pb2 as editor__pb2
 
 
 class EditorStub(object):

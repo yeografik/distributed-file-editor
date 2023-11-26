@@ -27,8 +27,8 @@ def run():
 
     # ip = sys.argv[1]
     # port = sys.argv[2]
-    ip = input()
-    port = input()
+    ip = input("node ip: ")
+    port = input("node port: ")
     user_id = 1  # we need to see how to assign userID's
 
     with grpc.insecure_channel(f"{ip}:{port}") as channel:
@@ -40,11 +40,11 @@ def run():
             position = int(input("position: "))
             # timestamp = time.time()
             # we should change timestamp in Command from int to float
-            command = Command(operation, position, timestamp, user_id)
-            timestamp += 1
+            command = Command(type=operation, position=position, timeStamp=timestamp, userID=user_id)
+            response = stub.SendCommand(command)
 
-            operation_status = stub.SendCommand(command)
-            if operation_status != 0:
+            timestamp += 1
+            if response.status != 0:
                 print("operation unsuccessful")
 
 
