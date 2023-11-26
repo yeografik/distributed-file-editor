@@ -5,27 +5,36 @@ import logging
 import grpc
 from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
+from src.protos.generated.editor_pb2 import USER, SERVER
 
 ip = sys.argv[1]
 port = sys.argv[2]
 
 
 class Editor(editor_pb2_grpc.EditorServicer):
-    def SendCommand(self, request, context):
-        print("request.type:" + str(request.type))
-        print("request.position:" + str(request.position))
-        print("request.timeStamp:" + str(request.timeStamp))
-        print("request.userID:" + str(request.userID))
+
+    def broadcast(self, request):
         status = 0
-        print(f"{ip}:{port}")
         for ip0, port0 in neighbors - {(ip, port)}:  # broadcasting the cmd
             print(f"broadcasting to: {ip0}:{port0}")
             with grpc.insecure_channel(f"{ip0}:{port0}") as channel:
                 stub = editor_pb2_grpc.EditorStub(channel)
                 response = stub.SendCommand(
-                    editor_pb2.Command(type=request.type, position=request.position, timeStamp=request.timeStamp,
-                                       userID=request.userID))
+                    editor_pb2.Command(type=request.type, position=request.position, time_stamp=request.time_stamp,
+                                       user_id=request.user_id, transmitter=SERVER))
                 status += response.status
+        return status
+
+    def SendCommand(self, request, context):
+        print("request.type:" + str(request.type))
+        print("request.position:" + str(request.position))
+        print("request.time_stamp:" + str(request.time_stamp))
+        print("request.user_id:" + str(request.user_id))
+        print("request.transmitter:" + str(request.transmitter))
+        status = 0
+        print(f"{ip}:{port}")
+        if request.transmitter == USER:
+            status = self.broadcast(request)
         return editor_pb2.CommandStatus(status=status)
 
 

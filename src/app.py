@@ -1,9 +1,8 @@
 import logging
-import sys
 
 import grpc
 from protos.generated import editor_pb2_grpc
-from protos.generated.editor_pb2 import INS, DEL, Command
+from protos.generated.editor_pb2 import INS, DEL, Command, USER
 
 
 def to_enum(operation):
@@ -40,7 +39,7 @@ def run():
             position = int(input("position: "))
             # timestamp = time.time()
             # we should change timestamp in Command from int to float
-            command = Command(type=operation, position=position, timeStamp=timestamp, userID=user_id)
+            command = Command(type=operation, position=position, time_stamp=timestamp, user_id=user_id, transmitter=USER)
             response = stub.SendCommand(command)
 
             timestamp += 1
