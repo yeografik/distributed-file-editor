@@ -20,18 +20,20 @@ USER: Transmitter
 SERVER: Transmitter
 
 class Command(_message.Message):
-    __slots__ = ["type", "position", "time_stamp", "user_id", "transmitter"]
+    __slots__ = ["type", "position", "time_stamp", "user_id", "transmitter", "char"]
     TYPE_FIELD_NUMBER: _ClassVar[int]
     POSITION_FIELD_NUMBER: _ClassVar[int]
     TIME_STAMP_FIELD_NUMBER: _ClassVar[int]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     TRANSMITTER_FIELD_NUMBER: _ClassVar[int]
+    CHAR_FIELD_NUMBER: _ClassVar[int]
     type: Operation
     position: int
     time_stamp: int
     user_id: int
     transmitter: Transmitter
-    def __init__(self, type: _Optional[_Union[Operation, str]] = ..., position: _Optional[int] = ..., time_stamp: _Optional[int] = ..., user_id: _Optional[int] = ..., transmitter: _Optional[_Union[Transmitter, str]] = ...) -> None: ...
+    char: str
+    def __init__(self, type: _Optional[_Union[Operation, str]] = ..., position: _Optional[int] = ..., time_stamp: _Optional[int] = ..., user_id: _Optional[int] = ..., transmitter: _Optional[_Union[Transmitter, str]] = ..., char: _Optional[str] = ...) -> None: ...
 
 class CommandStatus(_message.Message):
     __slots__ = ["status"]

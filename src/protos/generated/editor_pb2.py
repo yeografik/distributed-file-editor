@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x65\x64itor.proto\x12\x06\x65\x64itor\"\x8b\x01\n\x07\x43ommand\x12\x1f\n\x04type\x18\x01 \x01(\x0e\x32\x11.editor.Operation\x12\x10\n\x08position\x18\x02 \x01(\r\x12\x12\n\ntime_stamp\x18\x03 \x01(\r\x12\x0f\n\x07user_id\x18\x04 \x01(\r\x12(\n\x0btransmitter\x18\x05 \x01(\x0e\x32\x13.editor.Transmitter\"\x1f\n\rCommandStatus\x12\x0e\n\x06status\x18\x01 \x01(\r*\x1d\n\tOperation\x12\x07\n\x03INS\x10\x00\x12\x07\n\x03\x44\x45L\x10\x01*#\n\x0bTransmitter\x12\x08\n\x04USER\x10\x00\x12\n\n\x06SERVER\x10\x01\x32\x41\n\x06\x45\x64itor\x12\x37\n\x0bSendCommand\x12\x0f.editor.Command\x1a\x15.editor.CommandStatus\"\x00\x42\x06\xa2\x02\x03\x45\x44Tb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x65\x64itor.proto\x12\x06\x65\x64itor\"\xa7\x01\n\x07\x43ommand\x12\x1f\n\x04type\x18\x01 \x01(\x0e\x32\x11.editor.Operation\x12\x10\n\x08position\x18\x02 \x01(\r\x12\x12\n\ntime_stamp\x18\x03 \x01(\r\x12\x0f\n\x07user_id\x18\x04 \x01(\r\x12(\n\x0btransmitter\x18\x05 \x01(\x0e\x32\x13.editor.Transmitter\x12\x11\n\x04\x63har\x18\x06 \x01(\tH\x00\x88\x01\x01\x42\x07\n\x05_char\"\x1f\n\rCommandStatus\x12\x0e\n\x06status\x18\x01 \x01(\r*\x1d\n\tOperation\x12\x07\n\x03INS\x10\x00\x12\x07\n\x03\x44\x45L\x10\x01*#\n\x0bTransmitter\x12\x08\n\x04USER\x10\x00\x12\n\n\x06SERVER\x10\x01\x32\x41\n\x06\x45\x64itor\x12\x37\n\x0bSendCommand\x12\x0f.editor.Command\x1a\x15.editor.CommandStatus\"\x00\x42\x06\xa2\x02\x03\x45\x44Tb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -21,14 +21,14 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'editor_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\242\002\003EDT'
-  _globals['_OPERATION']._serialized_start=199
-  _globals['_OPERATION']._serialized_end=228
-  _globals['_TRANSMITTER']._serialized_start=230
-  _globals['_TRANSMITTER']._serialized_end=265
+  _globals['_OPERATION']._serialized_start=227
+  _globals['_OPERATION']._serialized_end=256
+  _globals['_TRANSMITTER']._serialized_start=258
+  _globals['_TRANSMITTER']._serialized_end=293
   _globals['_COMMAND']._serialized_start=25
-  _globals['_COMMAND']._serialized_end=164
-  _globals['_COMMANDSTATUS']._serialized_start=166
-  _globals['_COMMANDSTATUS']._serialized_end=197
-  _globals['_EDITOR']._serialized_start=267
-  _globals['_EDITOR']._serialized_end=332
+  _globals['_COMMAND']._serialized_end=192
+  _globals['_COMMANDSTATUS']._serialized_start=194
+  _globals['_COMMANDSTATUS']._serialized_end=225
+  _globals['_EDITOR']._serialized_start=295
+  _globals['_EDITOR']._serialized_end=360
 # @@protoc_insertion_point(module_scope)

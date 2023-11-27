@@ -40,6 +40,7 @@ message Command {
     uint32 time_stamp = 3;
     uint32 user_id = 4;
     Transmitter transmitter = 5;
+    optional string char = 6;
 }
 
 // The response message containing the operation status
