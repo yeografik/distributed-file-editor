@@ -5,7 +5,7 @@ import logging
 import grpc
 from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
-from src.protos.generated.editor_pb2 import USER, SERVER
+from protos.generated.editor_pb2 import USER, SERVER
 
 ip = sys.argv[1]
 port = sys.argv[2]
