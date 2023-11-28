@@ -40,3 +40,29 @@ class CommandStatus(_message.Message):
     STATUS_FIELD_NUMBER: _ClassVar[int]
     status: int
     def __init__(self, status: _Optional[int] = ...) -> None: ...
+
+class NodeInfo(_message.Message):
+    __slots__ = ["ip", "port"]
+    IP_FIELD_NUMBER: _ClassVar[int]
+    PORT_FIELD_NUMBER: _ClassVar[int]
+    ip: str
+    port: str
+    def __init__(self, ip: _Optional[str] = ..., port: _Optional[str] = ...) -> None: ...
+
+class NotifyResponse(_message.Message):
+    __slots__ = ["status"]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    status: bool
+    def __init__(self, status: bool = ...) -> None: ...
+
+class FileInfo(_message.Message):
+    __slots__ = ["file_name"]
+    FILE_NAME_FIELD_NUMBER: _ClassVar[int]
+    file_name: str
+    def __init__(self, file_name: _Optional[str] = ...) -> None: ...
+
+class Content(_message.Message):
+    __slots__ = ["content"]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    content: str
+    def __init__(self, content: _Optional[str] = ...) -> None: ...

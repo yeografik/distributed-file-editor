@@ -20,6 +20,16 @@ class EditorStub(object):
                 request_serializer=editor__pb2.Command.SerializeToString,
                 response_deserializer=editor__pb2.CommandStatus.FromString,
                 )
+        self.Notify = channel.unary_unary(
+                '/editor.Editor/Notify',
+                request_serializer=editor__pb2.NodeInfo.SerializeToString,
+                response_deserializer=editor__pb2.NotifyResponse.FromString,
+                )
+        self.RequestContent = channel.unary_unary(
+                '/editor.Editor/RequestContent',
+                request_serializer=editor__pb2.FileInfo.SerializeToString,
+                response_deserializer=editor__pb2.Content.FromString,
+                )
 
 
 class EditorServicer(object):
@@ -33,6 +43,20 @@ class EditorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Notify(self, request, context):
+        """Notifies a new node connection
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RequestContent(self, request, context):
+        """Request the content of the file
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_EditorServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -40,6 +64,16 @@ def add_EditorServicer_to_server(servicer, server):
                     servicer.SendCommand,
                     request_deserializer=editor__pb2.Command.FromString,
                     response_serializer=editor__pb2.CommandStatus.SerializeToString,
+            ),
+            'Notify': grpc.unary_unary_rpc_method_handler(
+                    servicer.Notify,
+                    request_deserializer=editor__pb2.NodeInfo.FromString,
+                    response_serializer=editor__pb2.NotifyResponse.SerializeToString,
+            ),
+            'RequestContent': grpc.unary_unary_rpc_method_handler(
+                    servicer.RequestContent,
+                    request_deserializer=editor__pb2.FileInfo.FromString,
+                    response_serializer=editor__pb2.Content.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -66,5 +100,39 @@ class Editor(object):
         return grpc.experimental.unary_unary(request, target, '/editor.Editor/SendCommand',
             editor__pb2.Command.SerializeToString,
             editor__pb2.CommandStatus.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Notify(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/editor.Editor/Notify',
+            editor__pb2.NodeInfo.SerializeToString,
+            editor__pb2.NotifyResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RequestContent(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/editor.Editor/RequestContent',
+            editor__pb2.FileInfo.SerializeToString,
+            editor__pb2.Content.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

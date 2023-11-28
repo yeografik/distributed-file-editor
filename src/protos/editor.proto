@@ -22,6 +22,12 @@ package editor;
 service Editor {
     // Sends a command
     rpc SendCommand (Command) returns (CommandStatus) {}
+
+    // Notifies a new node connection
+    rpc Notify (NodeInfo) returns (NotifyResponse) {}
+
+    // Request the content of the file
+    rpc RequestContent(FileInfo) returns (Content) {}
 }
 
 enum Operation {
@@ -48,3 +54,19 @@ message CommandStatus {
     uint32 status = 1;
 }
 
+message NodeInfo {
+    string ip = 1;
+    string port = 2;
+}
+
+message NotifyResponse {
+    bool status = 1;
+}
+
+message FileInfo {
+    string file_name = 1;
+}
+
+message Content {
+    string content = 1;
+}

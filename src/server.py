@@ -6,17 +6,18 @@ import signal
 import grpc
 from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
-from protos.generated.editor_pb2 import USER, SERVER, INS, DEL
+from protos.generated.editor_pb2 import *
 
-ip = sys.argv[1]
-port = sys.argv[2]
+me = (sys.argv[1], sys.argv[2])
+
+content = ""
 
 
 def signal_handler(sig, frame):
-    global file_content
+    global content
     print("ctrl+c pressed")
     file = open("doc", 'w')
-    file.write(file_content)
+    file.write(content)
     file.close()
     sys.exit(0)
 
@@ -26,9 +27,9 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def broadcast(request):
     status = 0
-    for ip0, port0 in server_nodes - {(ip, port)}:  # broadcasting the cmd
-        print(f"broadcasting to: {ip0}:{port0}")
-        with grpc.insecure_channel(f"{ip0}:{port0}") as channel:
+    for (ip, port) in active_nodes - {me}:  # broadcasting the cmd
+        print(f"broadcasting to: {ip}:{port}")
+        with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
             response = stub.SendCommand(
                 editor_pb2.Command(type=request.type, position=request.position, time_stamp=request.time_stamp,
@@ -38,15 +39,15 @@ def broadcast(request):
 
 
 def apply_command(request):
-    global file_content
+    global content
     pos = request.position
-    if pos < 0 | pos >= len(file_content):
+    if pos < 0 | pos >= len(content):
         return 1
 
     if request.type == INS:
-        file_content = file_content[:pos] + request.char + file_content[pos:]
+        content = content[:pos] + request.char + content[pos:]
     else:
-        file_content = file_content[:pos] + file_content[pos + 1:]
+        content = content[:pos] + content[pos + 1:]
     return 0
 
 
@@ -60,6 +61,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         print("request.transmitter:" + str(request.transmitter))
         print("request.character:" + str(request.char))
         status = 0
+        (ip, port) = me
         print(f"{ip}:{port}")
         status += apply_command(request)
 
@@ -68,38 +70,93 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
         return editor_pb2.CommandStatus(status=status)
 
+    def Notify(self, request, context):
+        node = (request.ip, request.port)
+        print(f"Node: {request.ip}:{request.port} is now connected")
+        active_nodes.add(node)
+        return editor_pb2.NotifyResponse(status=True)
+
+    def RequestContent(self, request, context):
+        return editor_pb2.Content(content=content)
+
 
 server_nodes = {
     ("localhost", "5001"),
     ("localhost", "5002"),
-    # ("localhost", "5003")
+    ("localhost", "5003")
 }
 
-file_content = ""
-
-
-def start_file():
-    try:
-        f = open("doc", 'r')
-    except:
-        f = open("doc", 'x')
-    finally:
-        content = f.read()
-        f.close()
-        return content
+active_nodes = set()
 
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     editor_pb2_grpc.add_EditorServicer_to_server(Editor(), server)
+    (ip, port) = me
     server.add_insecure_port(f"{ip}:{port}")
-    global file_content
-    file_content = start_file()
     server.start()
     print("Server started, listening on " + port)
     server.wait_for_termination()
 
 
+def notify(node):
+    ip, port = node
+    with grpc.insecure_channel(f"{ip}:{port}") as channel:
+        stub = editor_pb2_grpc.EditorStub(channel)
+        try:
+            my_ip, my_port = me
+            response = stub.Notify(editor_pb2.NodeInfo(ip=my_ip, port=my_port), timeout=5)
+            if response.status:
+                print(f"Connected to node: {ip}:{port}")
+                active_nodes.add((ip, port))
+            else:
+                print(f"Connection refused by node (timeout): {ip}:{port}")
+        except:
+            print(f"Connection refused by node: {ip}:{port}")
+
+
+def request_content_to(node):
+    ip, port = node
+    with grpc.insecure_channel(f"{ip}:{port}") as channel:
+        stub = editor_pb2_grpc.EditorStub(channel)
+        response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
+        # TODO: now we have one file, in the future the user could want to access to other files
+        return response.content
+
+
+def read_local_file_content() -> str:
+    try:
+        f = open("file.txt", 'r')
+    except:
+        f = open("file.txt", 'x')
+    finally:
+        file_content = f.read()
+        f.close()
+        return file_content
+
+
+def setup():
+    """This procedure notify to the other nodes that this node is now online.
+       Additionally, this node request the content of the file to the other nodes.
+       If no others nodes are connected, the local version of the content is used.
+    """
+    for node in server_nodes - {me}:
+        notify(node)
+
+    global content
+    if not active_nodes:
+        content = read_local_file_content()
+        print("Content loaded from file")
+    else:
+        node = next(iter(active_nodes))
+        content = request_content_to(node)
+        ip, port = node
+        print(f"Content loaded from node: {ip}:{port}")
+
+    print("Content: " + content)
+
+
 if __name__ == '__main__':
     logging.basicConfig()
+    setup()
     serve()
