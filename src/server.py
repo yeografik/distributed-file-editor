@@ -16,7 +16,7 @@ content = ""
 def signal_handler(sig, frame):
     global content
     print("ctrl+c pressed")
-    file = open("doc", 'w')
+    file = open("file.txt", 'w')
     file.write(content)
     file.close()
     sys.exit(0)
