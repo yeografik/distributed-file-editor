@@ -34,7 +34,11 @@ def run():
         while True:
             operation = to_enum(input("operation: "))
             position = int(input("position: "))
-            command = Command(type=operation, position=position, time_stamp=timestamp, user_id=user_id, transmitter=USER)
+            char = input("char: ")
+            if len(char) != 1:
+                print("please insert a character, not a string")
+                continue
+            command = Command(type=operation, position=position, time_stamp=timestamp, user_id=user_id, transmitter=USER, char=char)
             response = stub.SendCommand(command)
 
             timestamp += 1

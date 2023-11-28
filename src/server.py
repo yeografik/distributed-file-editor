@@ -14,6 +14,7 @@ port = sys.argv[2]
 
 def signal_handler(sig, frame):
     global file_content
+    print("ctrl+c pressed")
     file = open("doc", 'w')
     file.write(file_content)
     file.close()
@@ -21,7 +22,6 @@ def signal_handler(sig, frame):
 
 
 signal.signal(signal.SIGINT, signal_handler)
-signal.pause()
 
 
 def broadcast(request):
@@ -32,7 +32,7 @@ def broadcast(request):
             stub = editor_pb2_grpc.EditorStub(channel)
             response = stub.SendCommand(
                 editor_pb2.Command(type=request.type, position=request.position, time_stamp=request.time_stamp,
-                                   user_id=request.user_id, transmitter=SERVER))
+                                   user_id=request.user_id, transmitter=SERVER, char=request.char))
             status += response.status
     return status
 
@@ -40,13 +40,13 @@ def broadcast(request):
 def apply_command(request):
     global file_content
     pos = request.position
-    if pos < 0 | pos >= file_content.len:
+    if pos < 0 | pos >= len(file_content):
         return 1
 
     if request.type == INS:
         file_content = file_content[:pos] + request.char + file_content[pos:]
     else:
-        file_content = file_content[:pos] + request.char + file_content[pos + 1:]
+        file_content = file_content[:pos] + file_content[pos + 1:]
     return 0
 
 
