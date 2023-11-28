@@ -125,12 +125,13 @@ def request_content_to(node):
 
 
 def read_local_file_content() -> str:
+    file_content = ""
     try:
         f = open("file.txt", 'r')
+        file_content = f.read()
     except:
         f = open("file.txt", 'x')
     finally:
-        file_content = f.read()
         f.close()
         return file_content
 
