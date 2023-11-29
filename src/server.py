@@ -41,7 +41,7 @@ def broadcast(request):
 def apply_command(request):
     global content
     pos = request.position
-    if pos < 0 | pos >= len(content):
+    if pos < 0 or pos >= len(content):
         return 1
 
     if request.type == INS:
@@ -65,9 +65,10 @@ class Editor(editor_pb2_grpc.EditorServicer):
         print(f"{ip}:{port}")
         status += apply_command(request)
 
-        if request.transmitter == USER & status == 0:
+        if request.transmitter == USER and status == 0:
             status = broadcast(request)
 
+        print("operation status: " + str(status) + "\nfile content: " + str(content) + "\n")
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
