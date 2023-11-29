@@ -24,6 +24,19 @@ def to_enum(operation):
         exit(1)
 
 
+def get_command():
+    op = to_enum(input("operation: "))
+    pos = int(input("position: "))
+    char = ''
+    if op == INS:
+        char = input("char: ")
+        while op == INS and len(char) != 1:
+            print("please insert a character, not a string")
+            char = input("char: ")
+
+    return op, pos, char
+
+
 def run():
     user_id = 1  # we need to see how to assign userID's
 
@@ -31,13 +44,8 @@ def run():
         stub = editor_pb2_grpc.EditorStub(channel)
         timestamp = 0
         while True:
-            operation = to_enum(input("operation: "))
-            position = int(input("position: "))
-            char = input("char: ")
-            if operation == INS and len(char) != 1:
-                print("please insert a character, not a string")
-                continue
-            command = Command(type=operation, position=position, time_stamp=timestamp, user_id=user_id, transmitter=USER, char=char)
+            op, pos, char = get_command()
+            command = Command(type=op, position=pos, user_id=user_id, transmitter=USER, char=char)
             response = stub.SendCommand(command)
 
             timestamp += 1
