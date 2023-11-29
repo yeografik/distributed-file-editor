@@ -35,21 +35,23 @@ def broadcast(request):
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
             response = stub.SendCommand(
-                editor_pb2.Command(type=request.type, position=request.position,
+                editor_pb2.Command(operation=request.operation, position=request.position,
                                    user_id=request.user_id, transmitter=SERVER, char=request.char))
             status += response.status
     return status
 
 
-def apply_command(request):
+def apply(operation, pos, elem):
     global content
-    pos = request.position
-    if pos < 0 or pos >= len(content):
+    if pos < 0 or pos > len(content):
         return 1
 
-    if request.type == INS:
-        content = content[:pos] + request.char + content[pos:]
+    if operation == INS:
+        content = content[:pos] + elem + content[pos:]
     else:
+        assert operation == DEL
+        if pos == len(content):  # We cant delete at len(content) but we can insert there.
+            return 1
         content = content[:pos] + content[pos + 1:]
     return 0
 
@@ -57,15 +59,14 @@ def apply_command(request):
 class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
-        if request.type == 0:
-            print(f"receiving command: ins({request.char}, {request.position})")
+        if request.operation == 0:
+            print(f"receiving command: ins('{request.char}', {request.position})")
         else:
             print(f"receiving command: del({request.position})")
         print(f"from: user {request.user_id} through {'the app' if request.transmitter == 0 else 'a node'}")
         status = 0
-        status += apply_command(request)
+        status += apply(request.operation, request.position, request.char)
         print(f"Content: {content}")
-
 
         if request.transmitter == USER and status == 0:
             time.sleep(3)
@@ -119,14 +120,8 @@ def request_content_to(node):
 
 
 def read_local_file_content() -> str:
-    file_content = ""
-    try:
-        f = open("file.txt", 'r')
+    with open("file.txt", 'a+') as f:
         file_content = f.read()
-    except:
-        f = open("file.txt", 'x')
-    finally:
-        f.close()
         return file_content
 
 
@@ -135,6 +130,7 @@ def load_server_nodes():
         data = json.load(f)
         for node in data['nodes']:
             server_nodes.add((node['ip'], node['port']))
+
 
 def setup():
     """This procedure notify to the other nodes that this node is now online.

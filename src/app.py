@@ -45,7 +45,7 @@ def run():
         timestamp = 0
         while True:
             op, pos, char = get_command()
-            command = Command(type=op, position=pos, user_id=user_id, transmitter=USER, char=char)
+            command = Command(operation=op, position=pos, user_id=user_id, transmitter=USER, char=char)
             response = stub.SendCommand(command)
 
             timestamp += 1
