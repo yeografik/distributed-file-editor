@@ -1,0 +1,17 @@
+{
+    "nodes": [
+        {
+            "ip": "localhost",
+            "port": "5001"
+        },
+        {
+            "ip": "localhost",
+            "port": "5002"
+        },
+        {
+            "ip": "localhost",
+            "port": "5003"
+        }
+    ]
+
+}

@@ -3,6 +3,7 @@ import time
 from concurrent import futures
 import logging
 import signal
+import json
 
 import grpc
 from protos.generated import editor_pb2
@@ -10,7 +11,8 @@ from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
 
 me = (sys.argv[1], sys.argv[2])
-
+server_nodes = set()
+active_nodes = set()
 content = ""
 
 
@@ -81,14 +83,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         return editor_pb2.Content(content=content)
 
 
-server_nodes = {
-    ("localhost", "5001"),
-    ("localhost", "5002"),
-}
-
-active_nodes = set()
-
-
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     editor_pb2_grpc.add_EditorServicer_to_server(Editor(), server)
@@ -136,6 +130,12 @@ def read_local_file_content() -> str:
         return file_content
 
 
+def load_server_nodes():
+    with open("nodes.json") as f:
+        data = json.load(f)
+        for node in data['nodes']:
+            server_nodes.add((node['ip'], node['port']))
+
 def setup():
     """This procedure notify to the other nodes that this node is now online.
        Additionally, this node request the content of the file to the other nodes.
@@ -159,5 +159,6 @@ def setup():
 
 if __name__ == '__main__':
     logging.basicConfig()
+    load_server_nodes()
     setup()
     serve()
