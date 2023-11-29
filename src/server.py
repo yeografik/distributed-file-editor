@@ -54,21 +54,16 @@ def apply_command(request):
 class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
-        print("request.type:" + str(request.type))
-        print("request.position:" + str(request.position))
-        print("request.time_stamp:" + str(request.time_stamp))
-        print("request.user_id:" + str(request.user_id))
-        print("request.transmitter:" + str(request.transmitter))
-        print("request.character:" + str(request.char))
+        print(f"receiving command: {'insert' if request.type == 0 else 'delete'}({request.position}, {request.char})")
+        print(f"from: user {request.user_id}/{request.time_stamp} through {'the app' if request.transmitter == 0 else 'a node'}")
         status = 0
-        (ip, port) = me
-        print(f"{ip}:{port}")
         status += apply_command(request)
 
         if request.transmitter == USER and status == 0:
             status = broadcast(request)
 
-        print("operation status: " + str(status) + "\nfile content: " + str(content) + "\n")
+        # print(f"operation status: {status}")
+        print(f"Content: {content}")
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
