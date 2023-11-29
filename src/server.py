@@ -1,4 +1,5 @@
 import sys
+import time
 from concurrent import futures
 import logging
 import signal
@@ -58,12 +59,13 @@ class Editor(editor_pb2_grpc.EditorServicer):
         print(f"from: user {request.user_id}/{request.time_stamp} through {'the app' if request.transmitter == 0 else 'a node'}")
         status = 0
         status += apply_command(request)
+        print(f"Content: {content}")
+
 
         if request.transmitter == USER and status == 0:
+            time.sleep(3)
             status = broadcast(request)
 
-        # print(f"operation status: {status}")
-        print(f"Content: {content}")
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
@@ -79,7 +81,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
 server_nodes = {
     ("localhost", "5001"),
     ("localhost", "5002"),
-    ("localhost", "5003")
 }
 
 active_nodes = set()
