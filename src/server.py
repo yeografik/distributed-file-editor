@@ -33,7 +33,7 @@ def broadcast(request):
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
             response = stub.SendCommand(
-                editor_pb2.Command(type=request.type, position=request.position, time_stamp=request.time_stamp,
+                editor_pb2.Command(type=request.type, position=request.position,
                                    user_id=request.user_id, transmitter=SERVER, char=request.char))
             status += response.status
     return status
@@ -55,8 +55,11 @@ def apply_command(request):
 class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
-        print(f"receiving command: {'insert' if request.type == 0 else 'delete'}({request.position}, {request.char})")
-        print(f"from: user {request.user_id}/{request.time_stamp} through {'the app' if request.transmitter == 0 else 'a node'}")
+        if request.type == 0:
+            print(f"receiving command: ins({request.char}, {request.position})")
+        else:
+            print(f"receiving command: del({request.position})")
+        print(f"from: user {request.user_id} through {'the app' if request.transmitter == 0 else 'a node'}")
         status = 0
         status += apply_command(request)
         print(f"Content: {content}")
