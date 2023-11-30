@@ -100,22 +100,27 @@ class Editor(editor_pb2_grpc.EditorServicer):
                 status += apply(rollback_operation[0], rollback_operation[1], rollback_operation[2])
             else:
                 status += apply(request.operation, request.position, request.char)
+
+            clock = max(clock, request.clock)
+            print(f"Clock: {clock}")
             return editor_pb2.CommandStatus(status=status)
 
+        if request.transmitter == SERVER:
+            clock = max(clock, request.clock)
         if request.operation == 0:
             print(f"receiving command: ins('{request.char}', {request.position})")
         else:
             print(f"receiving command: del({request.position})")
         print(f"from: user {request.id} through {'the app' if request.transmitter == 0 else 'a node'}")
         status += apply(request.operation, request.position, request.char)
-        clock += 1
         print(f"Content: {content}")
 
         if request.transmitter == USER and status == 0:
             time.sleep(3)
+            clock += 1
             status = broadcast(request)
         elif status != 0:
-            clock -= 2  # restore clock to maintain consistency
+            print("error, status: " + str(status))
         print(f"Clock: {clock}")
         return editor_pb2.CommandStatus(status=status)
 
