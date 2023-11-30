@@ -93,7 +93,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         clock += 1
         if request.transmitter == SERVER and request.clock < clock:  # technically clock == request.clock + 1 when conflict
 
-            rollback = rollback_required(request.id, me[1])
+            rollback = rollback_required(request.id, int(me[1]))
             if rollback:
                 do_rollback()
                 status += apply(request.operation, request.position, request.char)
