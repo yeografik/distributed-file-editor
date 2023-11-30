@@ -35,14 +35,14 @@ def broadcast(request):
     global clock
     global last_operation
     status = 0
-    last_operation[0] = True  # this is not correct, any specific peer might not have received the broadcast yet
+    last_operation = (True, last_operation[1], last_operation[2], last_operation[3])  # this is not correct, any specific peer might not have received the broadcast yet
     for (ip, port) in active_nodes - {me}:  # broadcasting the cmd
         print(f"broadcasting to: {ip}:{port}")
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
             response = stub.SendCommand(
                 editor_pb2.Command(operation=request.operation, position=request.position,
-                                   user_id=request.user_id, transmitter=SERVER, char=request.char, clock=clock))
+                                   id=int(me[1]), transmitter=SERVER, char=request.char, clock=clock))
             status += response.status
     return status
 
@@ -92,7 +92,8 @@ class Editor(editor_pb2_grpc.EditorServicer):
         status = 0
         clock += 1
         if request.transmitter == SERVER and request.clock < clock:  # technically clock == request.clock + 1 when conflict
-            rollback = rollback_required(request.port, me[1])
+
+            rollback = rollback_required(request.id, me[1])
             if rollback:
                 do_rollback()
                 status += apply(request.operation, request.position, request.char)
@@ -105,7 +106,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
             print(f"receiving command: ins('{request.char}', {request.position})")
         else:
             print(f"receiving command: del({request.position})")
-        print(f"from: user {request.user_id} through {'the app' if request.transmitter == 0 else 'a node'}")
+        print(f"from: user {request.id} through {'the app' if request.transmitter == 0 else 'a node'}")
         status += apply(request.operation, request.position, request.char)
         clock += 1
         print(f"Content: {content}")

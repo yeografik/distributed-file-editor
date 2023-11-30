@@ -43,7 +43,7 @@ enum Transmitter {
 message Command {
     Operation operation = 1;
     uint32 position = 2;
-    uint32 user_id = 3;
+    optional uint32 id = 3;
     Transmitter transmitter = 4;
     optional string char = 5;
     optional uint32 clock = 6;

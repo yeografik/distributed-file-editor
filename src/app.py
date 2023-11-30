@@ -38,14 +38,12 @@ def get_command():
 
 
 def run():
-    user_id = 1  # we need to see how to assign userID's
-
     with grpc.insecure_channel(f"{ip}:{port}") as channel:
         stub = editor_pb2_grpc.EditorStub(channel)
         timestamp = 0
         while True:
             op, pos, char = get_command()
-            command = Command(operation=op, position=pos, user_id=user_id, transmitter=USER, char=char)
+            command = Command(operation=op, position=pos, transmitter=USER, char=char)
             response = stub.SendCommand(command)
 
             timestamp += 1
