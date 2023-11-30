@@ -37,7 +37,7 @@ def broadcast(request):
     status = 0
     last_operation = (True, last_operation[1], last_operation[2], last_operation[3])  # this is not correct, any specific peer might not have received the broadcast yet
     for (ip, port) in active_nodes - {me}:  # broadcasting the cmd
-        print(f"broadcasting to: {ip}:{port}")
+        # print(f"broadcasting to: {ip}:{port}")
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
             response = stub.SendCommand(
@@ -90,10 +90,13 @@ class Editor(editor_pb2_grpc.EditorServicer):
         global clock
         global last_operation
         status = 0
-        clock += 1
+        clock = max(clock + 1, request.clock)
+        # print(f"increasing clock to: {clock} after receiving")
+        # print(f"msg clock: {request.clock} - curr clock: {clock} - transmitter: {request.transmitter}")
         if request.transmitter == SERVER and request.clock < clock:  # technically clock == request.clock + 1 when conflict
-
+            # print("conflicto")
             rollback = rollback_required(request.id, int(me[1]))
+            # print(f"need rollback: {rollback}")
             if rollback:
                 do_rollback()
                 status += apply(request.operation, request.position, request.char)
@@ -101,32 +104,30 @@ class Editor(editor_pb2_grpc.EditorServicer):
             else:
                 status += apply(request.operation, request.position, request.char)
 
-            clock = max(clock, request.clock)
-            print(f"Clock: {clock}")
+            print(f"Content: {content}")
+            # print(f"Rollback Clock: {clock}")
             return editor_pb2.CommandStatus(status=status)
 
-        if request.transmitter == SERVER:
-            clock = max(clock, request.clock)
-        if request.operation == 0:
-            print(f"receiving command: ins('{request.char}', {request.position})")
-        else:
-            print(f"receiving command: del({request.position})")
-        print(f"from: user {request.id} through {'the app' if request.transmitter == 0 else 'a node'}")
+        # if request.operation == 0:
+            # print(f"receiving command: ins('{request.char}', {request.position})")
+        # else:
+            # print(f"receiving command: del({request.position})")
+        # print(f"from: user {request.id} through {'the app' if request.transmitter == 0 else 'a node'}")
         status += apply(request.operation, request.position, request.char)
         print(f"Content: {content}")
 
         if request.transmitter == USER and status == 0:
-            time.sleep(3)
             clock += 1
+            # print(f"increasing clock to: {clock} before broadcast")
+            time.sleep(3)
             status = broadcast(request)
         elif status != 0:
             print("error, status: " + str(status))
-        print(f"Clock: {clock}")
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
         node = (request.ip, request.port)
-        print(f"Node: {request.ip}:{request.port} is now connected")
+        # print(f"Node: {request.ip}:{request.port} is now connected")
         active_nodes.add(node)
         return editor_pb2.NotifyResponse(status=True)
 
@@ -140,7 +141,7 @@ def serve():
     (ip, port) = me
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-    print("Server started, listening on " + port)
+    # print("Server started, listening on " + port)
     server.wait_for_termination()
 
 
@@ -194,7 +195,7 @@ def setup():
     global content
     if not active_nodes:
         content = read_local_file_content()
-        print("Content loaded from file")
+        print("Content loaded from local file")
     else:
         node = next(iter(active_nodes))
         content = request_content_to(node)
