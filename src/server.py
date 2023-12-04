@@ -34,7 +34,8 @@ def broadcast(request):
     global clock
     global last_operation
     status = 0
-    last_operation = (True, last_operation[1], last_operation[2], last_operation[3])  # this is not correct, any specific peer might not have received the broadcast yet
+    last_operation = (True, last_operation[1], last_operation[2], last_operation[3])
+    # this is not correct, any specific peer might not have received the broadcast yet
     for (ip, port) in active_nodes - {me}:  # broadcasting the cmd
         # print(f"broadcasting to: {ip}:{port}")
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
@@ -61,7 +62,7 @@ def apply(operation, pos, elem):
         elem = content[pos]
         content = content[:pos] + content[pos + 1:]
 
-    last_operation = (True, operation, pos, elem)
+    last_operation = (False, operation, pos, elem)
     return 0
 
 
@@ -87,45 +88,68 @@ def do_rollback():
     apply(operation, pos, char)
 
 
+def handle_server_request(request):
+    global clock
+    if request.clock < clock:  # conflict
+        ip, port = me
+        my_id = int(port)
+        if rollback_required(my_id, request.id):
+            do_rollback()
+            status = apply(request.operation, request.position, request.char)
+            status += apply(rollback_operation[0], rollback_operation[1], rollback_operation[2])
+        else:
+            status = apply(request.operation, request.position, request.char)
+        # print(f"Rollback Clock: {clock}")
+    else:  # normal broadcast
+        # if request.operation == 0:
+        # print(f"receiving command: ins('{request.char}', {request.position})")
+        # else:
+        # print(f"receiving command: del({request.position})")
+        # print(f"from: server {request.id}")
+        status = apply(request.operation, request.position, request.char)
+
+    print(f"Content: {content}")
+    return status
+
+
+def handle_user_request(request):
+    global clock
+    # if request.operation == 0:
+    #   print(f"receiving command: ins('{request.char}', {request.position})")
+    # else:
+    #   print(f"receiving command: del({request.position})")
+    # print(f"from: user {request.id} through the app")
+    status = apply(request.operation, request.position, request.char)
+    print(f"Content: {content}")
+
+    if status == 0:
+        clock += 1
+        # print(f"increasing clock to: {clock} before broadcast")
+        time.sleep(3)
+        status = broadcast(request)
+
+    return status
+
+
 class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         global clock
-        global last_operation
-        status = 0
         clock = max(clock + 1, request.clock)
         # print(f"increasing clock to: {clock} after receiving")
         # print(f"msg clock: {request.clock} - curr clock: {clock} - transmitter: {request.transmitter}")
-        if request.transmitter == SERVER and request.clock < clock:  # technically clock == request.clock + 1 when conflict
-            ip, port = me
-            my_id = int(port)
-            if rollback_required(my_id, request.id):
-                do_rollback()
-                status += apply(request.operation, request.position, request.char)
-                status += apply(rollback_operation[0], rollback_operation[1], rollback_operation[2])
-            else:
-                status += apply(request.operation, request.position, request.char)
+        if request.transmitter == SERVER:
+            status = handle_server_request(request)
+        elif request.transmitter == USER:
+            status = handle_user_request(request)
+        else:
+            print(f"Couldn't handle request, unknown transmitter: {request.transmitter}")
+            status = 1
 
-            print(f"Content: {content}")
-            # print(f"Rollback Clock: {clock}")
-            return editor_pb2.CommandStatus(status=status)
-
-        # if request.operation == 0:
-            # print(f"receiving command: ins('{request.char}', {request.position})")
-        # else:
-            # print(f"receiving command: del({request.position})")
-        # print(f"from: user {request.id} through {'the app' if request.transmitter == 0 else 'a node'}")
-        status += apply(request.operation, request.position, request.char)
-        print(f"Content: {content}")
-
-        if request.transmitter == USER and status == 0:
-            clock += 1
-            # print(f"increasing clock to: {clock} before broadcast")
-            time.sleep(3)
-            status = broadcast(request)
-        elif status != 0:
+        if status != 0:
             print("error, status: " + str(status))
         return editor_pb2.CommandStatus(status=status)
+
 
     def Notify(self, request, context):
         node = (request.ip, request.port)
