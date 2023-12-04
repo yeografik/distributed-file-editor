@@ -22,9 +22,8 @@ clock = 0
 def signal_handler(sig, frame):
     global content
     print("ctrl+c pressed")
-    file = open("file.txt", 'w')
-    file.write(content)
-    file.close()
+    with open("file.txt", 'w') as f:
+        f.write(content)
     sys.exit(0)
 
 
@@ -62,16 +61,20 @@ def apply(operation, pos, elem):
         elem = content[pos]
         content = content[:pos] + content[pos + 1:]
 
-    last_operation = (False, operation, pos, elem)
+    last_operation = (True, operation, pos, elem)
     return 0
 
 
 def rollback_required(request_port, self_port):
     global last_operation
-    if last_operation[0]:
-        return self_port > request_port
-    else:
+    if not last_operation[0]:
         return True
+    print(f"this {self_port} - other {request_port}")
+    if self_port > request_port:
+        print(f"gano {self_port}")
+    else:
+        print(f"gano {request_port}")
+    return self_port > request_port
 
 
 def do_rollback():
@@ -94,10 +97,9 @@ class Editor(editor_pb2_grpc.EditorServicer):
         # print(f"increasing clock to: {clock} after receiving")
         # print(f"msg clock: {request.clock} - curr clock: {clock} - transmitter: {request.transmitter}")
         if request.transmitter == SERVER and request.clock < clock:  # technically clock == request.clock + 1 when conflict
-            # print("conflicto")
-            rollback = rollback_required(request.id, int(me[1]))
-            # print(f"need rollback: {rollback}")
-            if rollback:
+            ip, port = me
+            my_id = int(port)
+            if rollback_required(my_id, request.id):
                 do_rollback()
                 status += apply(request.operation, request.position, request.char)
                 status += apply(rollback_operation[0], rollback_operation[1], rollback_operation[2])
