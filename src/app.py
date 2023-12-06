@@ -25,7 +25,10 @@ def to_enum(operation):
 
 
 def get_command():
-    op = to_enum(input("operation: "))
+    op = input("operation: ")
+    if op == "exit":
+        exit(0)
+    op = to_enum(op)
     pos = int(input("position: "))
     char = ''
     if op == INS:
