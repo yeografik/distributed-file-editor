@@ -9,12 +9,13 @@ import grpc
 from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
+from src.logger import Logger
 
 me = (sys.argv[1], sys.argv[2])
 server_nodes = set()
 active_nodes = set()
 content = ""
-last_operations = Logger()
+operations_logger = Logger()
 corrected_operations = [()]  # [0] boolean: broadcast done, [1] Operation operation, [2] int: pos, [3] string: char, [4] int: clock
 clock = 0
 
@@ -30,9 +31,9 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def broadcast(request, local_clock, log_id):
+def broadcast(request, local_clock, cmd_id):
     status = 0
-    last_operations.setTrue(log_id)
+    operations_logger.set_true(cmd_id)
     # this is not correct, any specific peer might not have received the broadcast yet
     for (ip, port) in active_nodes - {me}:  # broadcasting the cmd
         # print(f"broadcasting to: {ip}:{port}")
@@ -47,7 +48,7 @@ def broadcast(request, local_clock, log_id):
 
 def apply(operation, pos, elem, local_clock):
     global content
-    global last_operations
+    global operations_logger
     if pos < 0 or pos > len(content):
         return 1
 
@@ -60,13 +61,13 @@ def apply(operation, pos, elem, local_clock):
         elem = content[pos]
         content = content[:pos] + content[pos + 1:]
 
-    log_id = last_operations.log((False, operation, pos, elem, local_clock))
+    log_id = operations_logger.log((False, operation, pos, elem, local_clock))
     return 0, log_id
 
 
 def rollback_required(request_port, self_port):
-    global last_operations
-    last_operation = last_operations.get_last()
+    global operations_logger
+    last_operation = operations_logger.pop()
     if not last_operation[0]:
         return True
     print(f"this {self_port} - other {request_port}")
@@ -78,9 +79,9 @@ def rollback_required(request_port, self_port):
 
 
 def do_rollback(local_clock):
-    global last_operations
+    global operations_logger
     global corrected_operations
-    operations = last_operations.get_operations_out_of_time(local_clock)
+    operations = operations_logger.get_events_after(local_clock)
     inverse_operations = [()]
     for operation in operations:
         op = DEL if operation[1] == INS else INS
