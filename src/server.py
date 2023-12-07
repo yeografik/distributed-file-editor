@@ -86,9 +86,8 @@ def do_rollback(local_clock):
         pos = operation[2]
         char = operation[3]
         inverse_operations.append((op, pos, char))
-        corrected_operations.append(operation)
+        corrected_operations.insert(0, operation)
 
-    inverse_operations.reverse()
     for inverse_operation in inverse_operations:
         apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], local_clock)
 
