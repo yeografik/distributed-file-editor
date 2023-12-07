@@ -9,15 +9,15 @@ import grpc
 from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
-from src.logger import Logger
-from src.doc import Document
+from logger import Logger
+from doc import Document
 
 me = (sys.argv[1], sys.argv[2])
 server_nodes = set()
 active_nodes = set()
 document: Document = Document("")
 operations_logger = Logger()
-corrected_operations = [()]  # [0] boolean: broadcast done, [1] Operation operation, [2] int: pos, [3] string: char, [4] int: clock
+corrected_operations = []  # [0] boolean: broadcast done, [1] Operation operation, [2] int: pos, [3] string: char, [4] int: clock
 clock = 0
 
 
@@ -80,7 +80,7 @@ def do_rollback(local_clock):
     global operations_logger
     global corrected_operations
     operations = operations_logger.get_events_after(local_clock)
-    inverse_operations = [()]
+    inverse_operations = []
     for operation in operations:
         op = DEL if operation[1] == INS else INS
         pos = operation[2]
@@ -133,7 +133,7 @@ def handle_user_request(request, local_clock):
     #   print(f"receiving command: del({request.position})")
     # print(f"from: user {request.id} through the app")
     status, log_id = apply(request.operation, request.position, request.char, local_clock)
-    print(f"Content: {document.get_content}")
+    print(f"Content: {document.get_content()}")
 
     if status == 0:
         clock += 1

@@ -14,7 +14,8 @@ class Logger:
         return self._log
 
     def set_true(self, cmd_id):
-        self._log[cmd_id][0] = True
+        command = self._log[cmd_id]
+        self._log[cmd_id] = (True, command[1], command[2], command[3], command[4])
 
     def get_events_after(self, clock):
         operations_out_of_time = []
