@@ -63,18 +63,25 @@ def apply(operation, pos, elem, local_clock):
     return 0, log_id
 
 
+def broadcast_done(operation):
+    return operation[0]
+
+
+def must_local_port_rollback(self_port, request_port):
+    return self_port > request_port
+
 def rollback_required(request_port, self_port):
     global operations_logger
     last_operation = operations_logger.get_last()
     print(f"this {self_port} - other {request_port}")
-    #if not last_operation[0]:
-    #    print(f"gano {request_port}")
-    #    return True
-    if not self_port < request_port:
+    if not broadcast_done(last_operation):
+        print(f"{self_port} must rollback")
+        return True
+    if must_local_port_rollback(self_port, request_port):
         print(f"{self_port} must rollback")
     else:
         print(f"{request_port} must rollback")
-    return not self_port < request_port
+    return must_local_port_rollback(self_port, request_port)
 
 
 def do_rollback(local_clock):
