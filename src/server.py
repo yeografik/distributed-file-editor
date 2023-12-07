@@ -15,7 +15,7 @@ from doc import Document
 me = (sys.argv[1], sys.argv[2])
 server_nodes = set()
 active_nodes = set()
-document: Document = Document("")
+document: Document
 operations_logger = Logger()
 corrected_operations = []  # [0] boolean: broadcast done, [1] Operation operation, [2] int: pos, [3] string: char, [4] int: clock
 clock = 0
@@ -66,19 +66,21 @@ def apply(operation, pos, elem, local_clock):
 def rollback_required(request_port, self_port):
     global operations_logger
     last_operation = operations_logger.get_last()
-    if not last_operation[0]:
-        return True
     print(f"this {self_port} - other {request_port}")
-    if self_port > request_port:
-        print(f"gano {self_port}")
+    #if not last_operation[0]:
+    #    print(f"gano {request_port}")
+    #    return True
+    if not self_port < request_port:
+        print(f"{self_port} must rollback")
     else:
-        print(f"gano {request_port}")
-    return self_port > request_port
+        print(f"{request_port} must rollback")
+    return not self_port < request_port
 
 
 def do_rollback(local_clock):
     global operations_logger
     global corrected_operations
+    print("Doing rollback")
     operations = operations_logger.get_events_after(local_clock)
     inverse_operations = []
     for operation in operations:
@@ -89,6 +91,7 @@ def do_rollback(local_clock):
         corrected_operations.insert(0, operation)
 
     for inverse_operation in inverse_operations:
+        print(f"applying {inverse_operation}")
         apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], local_clock)
 
 
@@ -102,10 +105,11 @@ def apply_rollback_operations():
 
 
 def handle_server_request(request, local_clock):
+    print(f"request_clock: {request.clock} - local clock: {local_clock}")
     if request.clock < local_clock:  # conflict
         ip, port = me
         my_id = int(port)
-        if rollback_required(my_id, request.id):
+        if rollback_required(request.id, my_id):
             do_rollback(local_clock)
             status = apply(request.operation, request.position, request.char, request.clock)[0]
             status += apply_rollback_operations()

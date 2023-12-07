@@ -21,9 +21,11 @@ class Logger:
         operations_out_of_time = []
         for i in range(0, len(self._log)):
             item = self._log[-1-i]
-            if clock > item[4]:
+            if clock < item[4]:
                 operations_out_of_time.append(item)
             else:
+                if clock == item[4]:
+                    print(f"found request and cmd have same clock: {clock}")
                 break
         return operations_out_of_time
 
