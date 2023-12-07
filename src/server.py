@@ -65,7 +65,7 @@ def apply(operation, pos, elem, local_clock):
 
 def rollback_required(request_port, self_port):
     global operations_logger
-    last_operation = operations_logger.pop()
+    last_operation = operations_logger.get_last()
     if not last_operation[0]:
         return True
     print(f"this {self_port} - other {request_port}")
