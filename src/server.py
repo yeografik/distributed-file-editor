@@ -10,21 +10,22 @@ from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
 from src.logger import Logger
+from src.doc import Document
 
 me = (sys.argv[1], sys.argv[2])
 server_nodes = set()
 active_nodes = set()
-content = ""
+document: Document = Document("")
 operations_logger = Logger()
 corrected_operations = [()]  # [0] boolean: broadcast done, [1] Operation operation, [2] int: pos, [3] string: char, [4] int: clock
 clock = 0
 
 
 def signal_handler(sig, frame):
-    global content
+    global document
     print("ctrl+c pressed")
     with open("file.txt", 'w') as f:
-        f.write(content)
+        f.write(document.get_content())
     sys.exit(0)
 
 
@@ -47,19 +48,16 @@ def broadcast(request, local_clock, cmd_id):
 
 
 def apply(operation, pos, elem, local_clock):
-    global content
+    global document
     global operations_logger
-    if pos < 0 or pos > len(content):
-        return 1
 
+    # TODO: this operation could fail, a try catch statement should be used
     if operation == INS:
-        content = content[:pos] + elem + content[pos:]
+        document.insert_at(elem, pos)
+    elif operation == DEL:
+        elem = document.delete_at(pos)
     else:
-        assert operation == DEL
-        if pos == len(content):  # We cant delete at len(content) but we can insert there.
-            return 1
-        elem = content[pos]
-        content = content[:pos] + content[pos + 1:]
+        raise Exception(f"Unknown operation {operation}")
 
     log_id = operations_logger.log((False, operation, pos, elem, local_clock))
     return 0, log_id
@@ -123,7 +121,7 @@ def handle_server_request(request, local_clock):
         # print(f"from: server {request.id}")
         status = apply(request.operation, request.position, request.char, request.clock)[0]
 
-    print(f"Content: {content}")
+    print(f"Content: {document.get_content()}")
     return status
 
 
@@ -135,7 +133,7 @@ def handle_user_request(request, local_clock):
     #   print(f"receiving command: del({request.position})")
     # print(f"from: user {request.id} through the app")
     status, log_id = apply(request.operation, request.position, request.char, local_clock)
-    print(f"Content: {content}")
+    print(f"Content: {document.get_content}")
 
     if status == 0:
         clock += 1
@@ -174,7 +172,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         return editor_pb2.NotifyResponse(status=True)
 
     def RequestContent(self, request, context):
-        return editor_pb2.Content(content=content)
+        return editor_pb2.Content(content=document.get_content())
 
 
 def serve():
@@ -203,20 +201,20 @@ def notify(node):
             print(f"Connection refused by node: {ip}:{port}")
 
 
-def request_content_to(node):
+def request_content_to(node) -> Document:
     ip, port = node
     with grpc.insecure_channel(f"{ip}:{port}") as channel:
         stub = editor_pb2_grpc.EditorStub(channel)
         response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
         # TODO: now we have one file, in the future the user could want to access to other files
-        return response.content
+        return Document(response.content)
 
 
-def read_local_file_content() -> str:
+def read_local_file_content() -> Document:
     with open("file.txt", 'a+') as f:
         f.seek(0)
         file_content = f.read()
-        return file_content
+        return Document(file_content)
 
 
 def load_server_nodes():
@@ -234,17 +232,17 @@ def setup():
     for node in server_nodes - {me}:
         notify(node)
 
-    global content
+    global document
     if not active_nodes:
-        content = read_local_file_content()
+        document = read_local_file_content()
         print("Content loaded from local file")
     else:
         node = next(iter(active_nodes))
-        content = request_content_to(node)
+        document = request_content_to(node)
         ip, port = node
         print(f"Content loaded from node: {ip}:{port}")
 
-    print("Content: " + content)
+    print("Content: " + document.get_content())
 
 
 if __name__ == '__main__':
