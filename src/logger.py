@@ -7,8 +7,8 @@ class Logger:
         self._log.append(cmd_info)
         return len(self._log) - 1
 
-    def pop(self):
-        return self._log.pop()
+    def get_last(self):
+        return self._log[-1]
 
     def get_log(self):
         return self._log
@@ -29,6 +29,7 @@ class Logger:
 
 
 if __name__ == "__main__":
+    # This is for testing purpose
     logger = Logger()
     print(f"{logger.log('info')}")
     print(f"{logger.get_log()}")
