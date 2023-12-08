@@ -15,6 +15,7 @@ from doc import Document
 me = (sys.argv[1], sys.argv[2])
 server_nodes = set()
 active_nodes = set()
+self_port = int(me[1])
 document: Document
 operations_logger = Logger()
 corrected_operations = []  # [0] boolean: broadcast done, [1] Operation operation, [2] int: pos, [3] string: char, [4] int: clock
@@ -70,22 +71,22 @@ def broadcast_done(operation):
     return operation[0]
 
 
-def must_local_port_rollback(self_port, request_port):
+def must_local_port_rollback(request_port):
     return self_port > request_port
 
 
-def rollback_required(request_port, self_port):
+def rollback_required(request_port):
     global operations_logger
     last_operation = operations_logger.get_last()
     print(f"this {self_port} - other {request_port}")
     if not broadcast_done(last_operation):
         print(f"{self_port} must rollback")
         return True
-    if must_local_port_rollback(self_port, request_port):
+    if must_local_port_rollback(request_port):
         print(f"{self_port} must rollback")
     else:
         print(f"{request_port} must rollback")
-    return must_local_port_rollback(self_port, request_port)
+    return must_local_port_rollback(request_port)
 
 
 def do_rollback(request_clock):
@@ -119,9 +120,7 @@ def handle_server_request(request, local_clock):
     global clock
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
     if request.clock < local_clock:  # conflict
-        ip, port = me
-        my_id = int(port)
-        if rollback_required(request.id, my_id):
+        if rollback_required(request.id):
             do_rollback(request.clock)
             clock += 1
             status = apply(request.operation, request.position, request.char, request.clock)[0]
