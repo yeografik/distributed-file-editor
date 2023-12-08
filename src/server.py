@@ -32,9 +32,12 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def broadcast(request, local_clock, cmd_id):
+def broadcast(request, cmd_id):
+    global clock
+    local_clock = clock
     status = 0
     operations_logger.set_true(cmd_id)
+    # print("broadcasting")
     # this is not correct, any specific peer might not have received the broadcast yet
     for (ip, port) in active_nodes - {me}:  # broadcasting the cmd
         # print(f"broadcasting to: {ip}:{port}")
@@ -70,6 +73,7 @@ def broadcast_done(operation):
 def must_local_port_rollback(self_port, request_port):
     return self_port > request_port
 
+
 def rollback_required(request_port, self_port):
     global operations_logger
     last_operation = operations_logger.get_last()
@@ -84,11 +88,11 @@ def rollback_required(request_port, self_port):
     return must_local_port_rollback(self_port, request_port)
 
 
-def do_rollback(local_clock):
+def do_rollback(request_clock):
     global operations_logger
     global corrected_operations
     print("Doing rollback")
-    operations = operations_logger.get_events_after(local_clock)
+    operations = operations_logger.get_events_after(request_clock)
     inverse_operations = []
     for operation in operations:
         op = DEL if operation[1] == INS else INS
@@ -99,7 +103,7 @@ def do_rollback(local_clock):
 
     for inverse_operation in inverse_operations:
         print(f"applying {inverse_operation}")
-        apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], local_clock)
+        apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], request_clock)
 
 
 def apply_rollback_operations():
@@ -112,12 +116,14 @@ def apply_rollback_operations():
 
 
 def handle_server_request(request, local_clock):
+    global clock
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
     if request.clock < local_clock:  # conflict
         ip, port = me
         my_id = int(port)
         if rollback_required(request.id, my_id):
-            do_rollback(local_clock)
+            do_rollback(request.clock)
+            clock += 1
             status = apply(request.operation, request.position, request.char, request.clock)[0]
             status += apply_rollback_operations()
         else:
@@ -147,10 +153,9 @@ def handle_user_request(request, local_clock):
 
     if status == 0:
         clock += 1
-        local_clock += 1
-        print(f"increasing clock to: {local_clock} before broadcast")
+        print(f"increasing clock to: {clock} before broadcast")
         time.sleep(3)
-        status = broadcast(request, local_clock, log_id)
+        status = broadcast(request, log_id)
 
     return status
 

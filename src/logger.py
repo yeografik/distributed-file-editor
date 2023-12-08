@@ -21,7 +21,8 @@ class Logger:
         operations_out_of_time = []
         for i in range(0, len(self._log)):
             item = self._log[-1-i]
-            if clock < item[4]:
+            # print(f"clock: {clock - 1}, command {i} clock: {item[4]}")
+            if clock - 1 <= item[4]:
                 operations_out_of_time.append(item)
             else:
                 if clock == item[4]:
