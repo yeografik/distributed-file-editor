@@ -6,6 +6,7 @@ import signal
 import json
 
 import grpc
+from grpc import StatusCode
 from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
@@ -44,10 +45,18 @@ def broadcast(request, cmd_id):
         # print(f"broadcasting to: {ip}:{port}")
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
-            response = stub.SendCommand(
-                editor_pb2.Command(operation=request.operation, position=request.position,
-                                   id=int(me[1]), transmitter=SERVER, char=request.char, clock=local_clock))
-            status += response.status
+            try:
+                response = stub.SendCommand(
+                    editor_pb2.Command(operation=request.operation, position=request.position,
+                                       id=int(me[1]), transmitter=SERVER, char=request.char, clock=local_clock))
+                status += response.status
+            except Exception as e:
+                rpc_state = e.args[0]
+                if rpc_state.code == StatusCode.UNAVAILABLE:
+                    print(f"node: {ip}:{port} is down")
+                    active_nodes.remove((ip, port))
+                else:
+                    raise e
     return status
 
 
@@ -211,8 +220,12 @@ def notify(node):
                 active_nodes.add((ip, port))
             else:
                 print(f"Connection refused by node (timeout): {ip}:{port}")
-        except:
-            print(f"Connection refused by node: {ip}:{port}")
+        except Exception as e:
+            rpc_state = e.args[0]
+            if rpc_state.code == StatusCode.UNAVAILABLE:
+                print(f"Connection refused by node: {ip}:{port}")
+            else:
+                raise e
 
 
 def request_content_to(node) -> Document:
@@ -238,14 +251,12 @@ def load_server_nodes():
             server_nodes.add((node['ip'], node['port']))
 
 
-def setup():
-    """This procedure notify to the other nodes that this node is now online.
-       Additionally, this node request the content of the file to the other nodes.
-       If no others nodes are connected, the local version of the content is used.
-    """
+def notify_nodes():
     for node in server_nodes - {me}:
         notify(node)
 
+
+def load_data():
     global document
     if not active_nodes:
         document = read_local_file_content()
@@ -259,8 +270,13 @@ def setup():
     print("Content: " + document.get_content())
 
 
-if __name__ == '__main__':
+def setup():
     logging.basicConfig()
     load_server_nodes()
+    notify_nodes()
+    load_data()
+
+
+if __name__ == '__main__':
     setup()
     serve()
