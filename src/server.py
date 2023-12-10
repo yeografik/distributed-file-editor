@@ -10,7 +10,6 @@ from grpc import StatusCode
 from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
-from logger import Logger
 from doc import Document
 
 me = (sys.argv[1], sys.argv[2])
@@ -18,8 +17,6 @@ server_nodes = set()
 active_nodes = set()
 self_port = int(me[1])
 document: Document
-operations_logger = Logger()
-corrected_operations = []  # [0] boolean: broadcast done, [1] Operation operation, [2] int: pos, [3] string: char, [4] int: clock
 clock = 0
 
 
@@ -38,7 +35,7 @@ def broadcast(request, cmd_id):
     global clock
     local_clock = clock
     status = 0
-    operations_logger.set_true(cmd_id)
+    document.get_log().set_true(cmd_id)
     # print("broadcasting")
     # this is not correct, any specific peer might not have received the broadcast yet
     for (ip, port) in active_nodes - {me}:  # broadcasting the cmd
@@ -60,22 +57,6 @@ def broadcast(request, cmd_id):
     return status
 
 
-def apply(operation, pos, elem, local_clock):
-    global document
-    global operations_logger
-
-    # TODO: this operation could fail, a try catch statement should be used
-    if operation == INS:
-        document.insert_at(elem, pos)
-    elif operation == DEL:
-        elem = document.delete_at(pos)
-    else:
-        raise Exception(f"Unknown operation {operation}")
-
-    log_id = operations_logger.log((False, operation, pos, elem, local_clock))
-    return 0, log_id
-
-
 def broadcast_done(operation):
     return operation[0]
 
@@ -85,8 +66,7 @@ def must_local_port_rollback(request_port):
 
 
 def rollback_required(request_port):
-    global operations_logger
-    last_operation = operations_logger.get_last()
+    last_operation = document.get_log().get_last()
     print(f"this {self_port} - other {request_port}")
     if not broadcast_done(last_operation):
         print(f"{self_port} must rollback")
@@ -98,44 +78,17 @@ def rollback_required(request_port):
     return must_local_port_rollback(request_port)
 
 
-def do_rollback(request_clock):
-    global operations_logger
-    global corrected_operations
-    print("Doing rollback")
-    operations = operations_logger.get_events_after(request_clock)
-    inverse_operations = []
-    for operation in operations:
-        op = DEL if operation[1] == INS else INS
-        pos = operation[2]
-        char = operation[3]
-        inverse_operations.append((op, pos, char))
-        corrected_operations.insert(0, operation)
-
-    for inverse_operation in inverse_operations:
-        print(f"applying {inverse_operation}")
-        apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], request_clock)
-
-
-def apply_rollback_operations():
-    global corrected_operations
-    status = 0
-    for operation in corrected_operations:
-        status += apply(operation[1], operation[2], operation[3], operation[4])[0]
-    corrected_operations.clear()
-    return status
-
-
 def handle_server_request(request, local_clock):
     global clock
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
     if request.clock < local_clock:  # conflict
         if rollback_required(request.id):
-            do_rollback(request.clock)
+            document.do_rollback(request.clock)
             clock += 1
-            status = apply(request.operation, request.position, request.char, request.clock)[0]
-            status += apply_rollback_operations()
+            status = document.apply(request.operation, request.position, request.char, request.clock)[0]
+            status += document.apply_rollback_operations()
         else:
-            status = apply(request.operation, request.position, request.char, request.clock)[0]
+            status = document.apply(request.operation, request.position, request.char, request.clock)[0]
         # print(f"Rollback Clock: {clock}")
     else:  # normal broadcast
         # if request.operation == 0:
@@ -143,7 +96,7 @@ def handle_server_request(request, local_clock):
         # else:
         # print(f"receiving command: del({request.position})")
         # print(f"from: server {request.id}")
-        status = apply(request.operation, request.position, request.char, request.clock)[0]
+        status = document.apply(request.operation, request.position, request.char, request.clock)[0]
 
     print(f"Content: {document.get_content()}")
     return status
@@ -156,7 +109,7 @@ def handle_user_request(request, local_clock):
     # else:
     #   print(f"receiving command: del({request.position})")
     # print(f"from: user {request.id} through the app")
-    status, log_id = apply(request.operation, request.position, request.char, local_clock)
+    status, log_id = document.apply(request.operation, request.position, request.char, local_clock)
     print(f"Content: {document.get_content()}")
 
     if status == 0:
