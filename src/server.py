@@ -145,7 +145,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         node = (request.ip, request.port)
         # print(f"Node: {request.ip}:{request.port} is now connected")
         active_nodes.add(node)
-        return editor_pb2.NotifyResponse(status=True)
+        return editor_pb2.NotifyResponse(status=True, clock=clock)
 
     def RequestContent(self, request, context):
         return editor_pb2.Content(content=document.get_content())
@@ -163,6 +163,7 @@ def serve():
 
 def notify(node):
     ip, port = node
+    global clock
     with grpc.insecure_channel(f"{ip}:{port}") as channel:
         stub = editor_pb2_grpc.EditorStub(channel)
         try:
@@ -170,6 +171,7 @@ def notify(node):
             response = stub.Notify(editor_pb2.NodeInfo(ip=my_ip, port=my_port), timeout=5)
             if response.status:
                 print(f"Connected to node: {ip}:{port}")
+                clock = response.clock
                 active_nodes.add((ip, port))
             else:
                 print(f"Connection refused by node (timeout): {ip}:{port}")
