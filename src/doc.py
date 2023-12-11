@@ -12,6 +12,7 @@ class Document:
 
     def get_log(self):
         return self.logger
+
     def insert_at(self, char, idx):
         if len(char) != 1:
             raise Exception("Character should be inserted")
