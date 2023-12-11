@@ -144,7 +144,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         node = (request.ip, request.port)
         # print(f"Node: {request.ip}:{request.port} is now connected")
         self_node.add_active_node(node)
-        return editor_pb2.NotifyResponse(status=True)
+        return editor_pb2.NotifyResponse(status=True, clock=clock)
 
     def RequestContent(self, request, context):
         return editor_pb2.Content(content=document.get_content())

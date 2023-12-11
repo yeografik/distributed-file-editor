@@ -50,10 +50,12 @@ class NodeInfo(_message.Message):
     def __init__(self, ip: _Optional[str] = ..., port: _Optional[str] = ...) -> None: ...
 
 class NotifyResponse(_message.Message):
-    __slots__ = ["status"]
+    __slots__ = ["status", "clock"]
     STATUS_FIELD_NUMBER: _ClassVar[int]
+    CLOCK_FIELD_NUMBER: _ClassVar[int]
     status: bool
-    def __init__(self, status: bool = ...) -> None: ...
+    clock: int
+    def __init__(self, status: bool = ..., clock: _Optional[int] = ...) -> None: ...
 
 class FileInfo(_message.Message):
     __slots__ = ["file_name"]
