@@ -11,12 +11,13 @@ from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
 from doc import Document
 from node import Node
+from clock import Clock
 
 me = (sys.argv[1], sys.argv[2])
-self_node = Node(me)
 self_port = int(me[1])
-document: Document
-clock = 0
+document = Document()
+clock = Clock()
+self_node = Node(me, document, clock)
 
 
 def signal_handler(sig, frame):
@@ -32,7 +33,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def broadcast(request, cmd_id):
     global clock
-    local_clock = clock
+    local_clock = clock.get()
     status = 0
     document.get_log().set_true(cmd_id)
     # print("broadcasting")
@@ -83,7 +84,7 @@ def handle_server_request(request, local_clock):
     if request.clock < local_clock:  # conflict
         if rollback_required(request.id):
             document.do_rollback(request.clock)
-            clock += 1
+            clock.increase()
             status = document.apply(request.operation, request.position, request.char, request.clock)[0]
             status += document.apply_rollback_operations()
         else:
@@ -112,8 +113,8 @@ def handle_user_request(request, local_clock):
     print(f"Content: {document.get_content()}")
 
     if status == 0:
-        clock += 1
-        print(f"increasing clock to: {clock} before broadcast")
+        clock.increase()
+        print(f"increasing clock to: {clock.get()} before broadcast")
         time.sleep(3)
         status = broadcast(request, log_id)
 
@@ -124,8 +125,8 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         global clock
-        clock = max(clock + 1, request.clock)
-        local_clock = clock
+        clock.update(request.clock)
+        local_clock = clock.get()
         # print(f"increasing clock to: {clock} after receiving")
         print(f"msg clock: {request.clock} - curr clock: {local_clock} - transmitter: {request.transmitter}")
         if request.transmitter == SERVER:
@@ -144,7 +145,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         node = (request.ip, request.port)
         # print(f"Node: {request.ip}:{request.port} is now connected")
         self_node.add_active_node(node)
-        return editor_pb2.NotifyResponse(status=True, clock=clock)
+        return editor_pb2.NotifyResponse(status=True, clock=clock.get())
 
     def RequestContent(self, request, context):
         return editor_pb2.Content(content=document.get_content())
@@ -161,12 +162,10 @@ def serve():
 
 
 def setup():
-    global document
     logging.basicConfig()
     self_node.load_server_nodes()
     self_node.notify_nodes()
     self_node.load_data()
-    document = self_node.get_document()
 
 
 if __name__ == '__main__':

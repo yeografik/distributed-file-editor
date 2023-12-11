@@ -31,6 +31,9 @@ class Document:
     def get_content(self):
         return self._content
 
+    def set_content(self, content):
+        self._content = content
+
     def do_rollback(self, request_clock):
         print("Doing rollback")
         operations = self.logger.get_events_after(request_clock)
