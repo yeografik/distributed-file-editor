@@ -85,10 +85,11 @@ def handle_server_request(request, local_clock):
         if rollback_required(request.id):
             document.do_rollback(request.clock)
             clock.increase()
-            status = document.apply(request.operation, request.position, request.char, request.clock)[0]
+            status = document.apply(request.operation, request.position, request.char, request.clock, request.id)[0]
             status += document.apply_rollback_operations()
         else:
-            status = document.apply(request.operation, request.position, request.char, request.clock)[0]
+            status, log_id = document.apply(request.operation, request.position, request.char, request.clock, request.id)
+            document.get_log().set_true(log_id)
         # print(f"Rollback Clock: {clock}")
     else:  # normal broadcast
         # if request.operation == 0:
@@ -96,7 +97,8 @@ def handle_server_request(request, local_clock):
         # else:
         # print(f"receiving command: del({request.position})")
         # print(f"from: server {request.id}")
-        status = document.apply(request.operation, request.position, request.char, request.clock)[0]
+        status, log_id = document.apply(request.operation, request.position, request.char, request.clock, request.id)
+        document.get_log().set_true(log_id)
 
     print(f"Content: {document.get_content()}")
     return status
@@ -109,7 +111,7 @@ def handle_user_request(request, local_clock):
     # else:
     #   print(f"receiving command: del({request.position})")
     # print(f"from: user {request.id} through the app")
-    status, log_id = document.apply(request.operation, request.position, request.char, local_clock)
+    status, log_id = document.apply(request.operation, request.position, request.char, local_clock, request.id)
     print(f"Content: {document.get_content()}")
 
     if status == 0:

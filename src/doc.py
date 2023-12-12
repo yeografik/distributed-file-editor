@@ -42,21 +42,21 @@ class Document:
             op = DEL if operation[1] == INS else INS
             pos = operation[2]
             char = operation[3]
-            inverse_operations.append((op, pos, char))
+            inverse_operations.append((op, pos, char, operation[5]))
             self.corrected_operations.insert(0, operation)
 
         for inverse_operation in inverse_operations:
             print(f"applying {inverse_operation}")
-            self.apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], request_clock)
+            self.apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], request_clock, inverse_operation[3])
 
     def apply_rollback_operations(self):
         status = 0
         for operation in self.corrected_operations:
-            status += self.apply(operation[1], operation[2], operation[3], operation[4])[0]
+            status += self.apply(operation[1], operation[2], operation[3], operation[4], operation[5])[0]
         self.corrected_operations.clear()
         return status
 
-    def apply(self, operation, pos, elem, local_clock):
+    def apply(self, operation, pos, elem, local_clock, node_id):
 
         # TODO: this operation could fail, a try catch statement should be used
         if operation == INS:
@@ -66,5 +66,5 @@ class Document:
         else:
             raise Exception(f"Unknown operation {operation}")
 
-        log_id = self.logger.log((False, operation, pos, elem, local_clock))
+        log_id = self.logger.log((False, operation, pos, elem, local_clock, node_id))
         return 0, log_id
