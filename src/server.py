@@ -117,14 +117,13 @@ def handle_user_request(request, local_clock):
     # else:
     #   print(f"receiving command: del({request.position})")
     # print(f"from: user {request.id} through the app")
-    status, log_id = document.apply(request.operation, request.position, request.char, local_clock, request.id)
+    status, log_id = document.apply(request.operation, request.position, request.char, local_clock, self_port)
     print(f"Content: {document.get_content()}")
 
     if status == 0:
-        clock.increase()
-        local_clock = clock.get()  # FIXME: CRITICAL REGION
+        local_clock = clock.increase()
         print(f"increasing clock to: {local_clock} before broadcast")
-        time.sleep(3)
+        # time.sleep(3)
         status = broadcast(request, log_id, local_clock)
 
     return status
@@ -135,8 +134,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
     def SendCommand(self, request, context):
         global clock
         print(f"clock when receiving: {clock.get()}")
-        clock.update(request.clock)
-        local_clock = clock.get()
+        local_clock = clock.update(request.clock)
         print(f"increasing clock to: {clock.get()} after receiving")
         print(f"msg clock: {request.clock} - curr clock: {local_clock} - transmitter: {request.transmitter}")
         if request.transmitter == SERVER:
