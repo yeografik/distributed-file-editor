@@ -86,9 +86,18 @@ def handle_server_request(request, local_clock):
             document.do_rollback(request.clock)
             clock.increase()
             status = document.apply(request.operation, request.position, request.char, request.clock, request.id)[0]
-            status += document.apply_rollback_operations()
+            status += document.apply_rollback_operations(request.operation, request.position)
         else:
-            status, log_id = document.apply(request.operation, request.position, request.char, request.clock, request.id)
+            pos_prev_cmd = document.get_log().get_last()[2]
+            if pos_prev_cmd < request.position:
+                if request.operation == INS:
+                    status, log_id = document.apply(request.operation, request.position + 1, request.char, request.clock, request.id)
+                elif request.operation == DEL:
+                    status, log_id = document.apply(request.operation, request.position - 1, request.char, request.clock, request.id)
+                else:
+                    raise Exception
+            else:
+                status, log_id = document.apply(request.operation, request.position, request.char, request.clock, request.id)
             document.get_log().set_true(log_id)
         # print(f"Rollback Clock: {clock}")
     else:  # normal broadcast

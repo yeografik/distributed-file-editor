@@ -49,10 +49,18 @@ class Document:
             print(f"applying {inverse_operation}")
             self.apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], request_clock, inverse_operation[3])
 
-    def apply_rollback_operations(self):
+    def apply_rollback_operations(self, prev_op, prev_pos):
         status = 0
-        for operation in self.corrected_operations:
-            status += self.apply(operation[1], operation[2], operation[3], operation[4], operation[5])[0]
+        for (broadcast_done, op, pos, char, clock, node_id) in self.corrected_operations:
+            if prev_pos < pos:
+                if prev_op == INS:
+                    status += self.apply(op, pos+1, char, clock, node_id)[0]
+                elif prev_op == DEL:
+                    status += self.apply(op, pos-1, char, clock, node_id)[0]
+                else:
+                    raise Exception
+            else:
+                status += self.apply(op, pos, char, clock, node_id)[0]
         self.corrected_operations.clear()
         return status
 
