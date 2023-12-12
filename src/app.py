@@ -1,4 +1,5 @@
 import logging
+import signal
 import sys
 
 import grpc
@@ -12,6 +13,14 @@ if argv != 3:
 
 ip = sys.argv[1]
 port = sys.argv[2]
+
+
+def signal_handler(sig, frame):
+    print("\nctrl+c pressed")
+    sys.exit(0)
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
 def to_enum(operation):
