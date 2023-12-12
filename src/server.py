@@ -61,21 +61,21 @@ def broadcast_done(operation):
     return operation[0]
 
 
-def must_local_port_rollback(request_port):
-    return self_port > request_port
+def must_local_node_do_rollback(request_port, last_port):
+    return last_port > request_port
 
 
 def rollback_required(request_port):
     last_operation = document.get_log().get_last()
-    print(f"this {self_port} - other {request_port}")
+    print(f"last {last_operation[5]} - other {request_port}")
     if not broadcast_done(last_operation):
         print(f"{self_port} must rollback")
         return True
-    if must_local_port_rollback(request_port):
-        print(f"{self_port} must rollback")
+    if must_local_node_do_rollback(request_port, last_operation[5]):
+        print(f"{last_operation[5]} must rollback")
     else:
         print(f"{request_port} must rollback")
-    return must_local_port_rollback(request_port)
+    return must_local_node_do_rollback(request_port, last_operation[5])
 
 
 def handle_server_request(request, local_clock):

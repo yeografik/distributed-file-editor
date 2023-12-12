@@ -8,7 +8,7 @@ class Document:
         self._content = content
         self.logger = Logger()
         self.corrected_operations = []  # [0] boolean: broadcast done, [1] Operation, [2] int: pos,
-        # [3] string: char, [4] int: clock
+        # [3] string: char, [4] int: clock, [5] int: port
 
     def get_log(self):
         return self.logger
