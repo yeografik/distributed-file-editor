@@ -31,11 +31,9 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def broadcast(request, cmd_id, local_clock):
+def broadcast(request, local_clock):
     status = 0
-    document.get_log().set_true(cmd_id)
     # print("broadcasting")
-    # this is not correct, any specific peer might not have received the broadcast yet
     for (ip, port) in self_node.get_active_nodes() - {me}:  # broadcasting the cmd
         # print(f"broadcasting to: {ip}:{port}")
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
@@ -55,22 +53,18 @@ def broadcast(request, cmd_id, local_clock):
     return status
 
 
-def broadcast_done(operation):
-    return operation[0]
-
-
 def must_local_node_do_rollback(request_port, last_port):
     return last_port > request_port
 
 
 def rollback_required(request_port):
     last_operation = document.get_log().get_last()
-    print(f"last {last_operation[5]} - other {request_port}")
-    if must_local_node_do_rollback(request_port, last_operation[5]):
-        print(f"{last_operation[5]} must rollback")
+    print(f"last {last_operation[4]} - other {request_port}")
+    if must_local_node_do_rollback(request_port, last_operation[4]):
+        print(f"{last_operation[4]} must rollback")
     else:
         print(f"{request_port} must rollback")
-    return must_local_node_do_rollback(request_port, last_operation[5])
+    return must_local_node_do_rollback(request_port, last_operation[4])
 
 
 def handle_server_request(request, local_clock):
@@ -78,24 +72,22 @@ def handle_server_request(request, local_clock):
     if request.clock < local_clock:  # conflict
         if rollback_required(request.id):
             document.do_rollback(request.clock)
-            # clock.increase()
             status = document.apply(request.operation, request.position, request.char, request.clock, request.id)[0]
             status += document.apply_rollback_operations(request.operation, request.position)
         else:
-            pos_prev_cmd = document.get_log().get_last()[2]
+            pos_prev_cmd = document.get_log().get_last()[1]
             if pos_prev_cmd < request.position:
                 if request.operation == INS:
-                    status, log_id = document.apply(request.operation, request.position + 1, request.char,
-                                                    request.clock, request.id)
+                    status = document.apply(request.operation, request.position + 1, request.char,
+                                            request.clock, request.id)[0]
                 elif request.operation == DEL:
-                    status, log_id = document.apply(request.operation, request.position - 1, request.char,
-                                                    request.clock, request.id)
+                    status = document.apply(request.operation, request.position - 1, request.char,
+                                            request.clock, request.id)[0]
                 else:
                     raise Exception
             else:
-                status, log_id = document.apply(request.operation, request.position, request.char, request.clock,
-                                                request.id)
-            document.get_log().set_true(log_id)
+                status = document.apply(request.operation, request.position, request.char, request.clock,
+                                        request.id)[0]
         # print(f"Rollback Clock: {clock}")
     else:  # normal broadcast
         # if request.operation == 0:
@@ -103,8 +95,7 @@ def handle_server_request(request, local_clock):
         # else:
         # print(f"receiving command: del({request.position})")
         # print(f"from: server {request.id}")
-        status, log_id = document.apply(request.operation, request.position, request.char, request.clock, request.id)
-        document.get_log().set_true(log_id)
+        status = document.apply(request.operation, request.position, request.char, request.clock, request.id)[0]
 
     print(f"Content: {document.get_content()}")
     return status
@@ -117,7 +108,7 @@ def handle_user_request(request, local_clock):
     # else:
     #   print(f"receiving command: del({request.position})")
     # print(f"from: user {request.id} through the app")
-    status, log_id = document.apply(request.operation, request.position, request.char, local_clock, request.id)
+    status = document.apply(request.operation, request.position, request.char, local_clock, request.id)[0]
     print(f"Content: {document.get_content()}")
 
     if status == 0:
@@ -125,7 +116,7 @@ def handle_user_request(request, local_clock):
         local_clock = clock.get()  # FIXME: CRITICAL REGION
         print(f"increasing clock to: {local_clock} before broadcast")
         time.sleep(3)
-        status = broadcast(request, log_id, local_clock)
+        status = broadcast(request, local_clock)
 
     return status
 

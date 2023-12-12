@@ -7,8 +7,8 @@ class Document:
     def __init__(self, content: str = ""):
         self._content = content
         self.logger = Logger()
-        self.corrected_operations = []  # [0] boolean: broadcast done, [1] Operation, [2] int: pos,
-        # [3] string: char, [4] int: clock, [5] int: port
+        self.corrected_operations = []  # [0] Operation, [1] int: pos,
+        # [2] string: char, [3] int: clock, [4] int: port
 
     def get_log(self):
         return self.logger
@@ -39,10 +39,10 @@ class Document:
         operations = self.logger.get_events_after(request_clock)
         inverse_operations = []
         for operation in operations:
-            op = DEL if operation[1] == INS else INS
-            pos = operation[2]
-            char = operation[3]
-            inverse_operations.append((op, pos, char, operation[5]))
+            op = DEL if operation[0] == INS else INS
+            pos = operation[1]
+            char = operation[2]
+            inverse_operations.append((op, pos, char, operation[4]))
             self.corrected_operations.insert(0, operation)
 
         for inverse_operation in inverse_operations:
@@ -74,5 +74,5 @@ class Document:
         else:
             raise Exception(f"Unknown operation {operation}")
 
-        log_id = self.logger.log((False, operation, pos, elem, local_clock, node_id))
+        log_id = self.logger.log((operation, pos, elem, local_clock, node_id))
         return 0, log_id
