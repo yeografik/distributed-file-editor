@@ -51,7 +51,7 @@ class Document:
 
     def apply_rollback_operations(self, prev_op, prev_pos):
         status = 0
-        for (broadcast_done, op, pos, char, clock, node_id) in self.corrected_operations:
+        for (op, pos, char, clock, node_id) in self.corrected_operations:
             if prev_pos < pos:
                 if prev_op == INS:
                     status += self.apply(op, pos+1, char, clock, node_id)[0]

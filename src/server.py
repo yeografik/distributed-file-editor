@@ -59,7 +59,7 @@ def must_local_node_do_rollback(request_port, last_port):
 
 def rollback_required(request_port):
     last_operation = document.get_log().get_last()
-    print(f"last {last_operation[4]} - other {request_port}")
+    print(f"this {self_port} - last {last_operation[4]} - other {request_port}")
     if must_local_node_do_rollback(request_port, last_operation[4]):
         print(f"{last_operation[4]} must rollback")
     else:
@@ -108,7 +108,7 @@ def handle_user_request(request, local_clock):
     # else:
     #   print(f"receiving command: del({request.position})")
     # print(f"from: user {request.id} through the app")
-    status = document.apply(request.operation, request.position, request.char, local_clock, request.id)[0]
+    status = document.apply(request.operation, request.position, request.char, local_clock, self_port)[0]
     print(f"Content: {document.get_content()}")
 
     if status == 0:
