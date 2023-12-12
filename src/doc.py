@@ -34,9 +34,9 @@ class Document:
     def set_content(self, content):
         self._content = content
 
-    def do_rollback(self, request_clock):
+    def do_rollback(self, request_clock, request_port):
         print("Doing rollback")
-        operations = self.logger.get_events_after(request_clock)
+        operations = self.logger.get_events_after(request_clock, request_port)
         inverse_operations = []
         for operation in operations:
             op = DEL if operation[0] == INS else INS

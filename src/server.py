@@ -71,7 +71,7 @@ def handle_server_request(request, local_clock):
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
     if request.clock < local_clock:  # conflict
         if rollback_required(request.id):
-            document.do_rollback(request.clock)
+            document.do_rollback(request.clock, request.id)
             status = document.apply(request.operation, request.position, request.char, request.clock, request.id)[0]
             status += document.apply_rollback_operations(request.operation, request.position)
         else:

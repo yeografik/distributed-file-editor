@@ -13,13 +13,16 @@ class Logger:
     def get_log(self):
         return self._log
 
-    def get_events_after(self, clock):
+    def get_events_after(self, clock, port):
         operations_out_of_time = []
         for i in range(0, len(self._log)):
             item = self._log[-1-i]
             # print(f"clock: {clock - 1}, command {i} clock: {item[4]}")
             if clock - 1 <= item[3]:
-                operations_out_of_time.append(item)
+                if port < item[4]:
+                    operations_out_of_time.append(item)
+                else:
+                    break
             else:
                 if clock == item[3]:
                     print(f"found request and cmd have same clock: {clock}")
