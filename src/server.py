@@ -31,9 +31,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def broadcast(request, cmd_id):
-    global clock
-    local_clock = clock.get()
+def broadcast(request, cmd_id, local_clock):
     status = 0
     document.get_log().set_true(cmd_id)
     # print("broadcasting")
@@ -68,9 +66,9 @@ def must_local_port_rollback(request_port):
 def rollback_required(request_port):
     last_operation = document.get_log().get_last()
     print(f"this {self_port} - other {request_port}")
-    if not broadcast_done(last_operation):
-        print(f"{self_port} must rollback")
-        return True
+    # if not broadcast_done(last_operation):
+    #    print(f"{self_port} must rollback")
+    #    return True
     if must_local_port_rollback(request_port):
         print(f"{self_port} must rollback")
     else:
@@ -79,25 +77,27 @@ def rollback_required(request_port):
 
 
 def handle_server_request(request, local_clock):
-    global clock
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
     if request.clock < local_clock:  # conflict
         if rollback_required(request.id):
             document.do_rollback(request.clock)
-            clock.increase()
+            # clock.increase()
             status = document.apply(request.operation, request.position, request.char, request.clock, request.id)[0]
             status += document.apply_rollback_operations(request.operation, request.position)
         else:
             pos_prev_cmd = document.get_log().get_last()[2]
             if pos_prev_cmd < request.position:
                 if request.operation == INS:
-                    status, log_id = document.apply(request.operation, request.position + 1, request.char, request.clock, request.id)
+                    status, log_id = document.apply(request.operation, request.position + 1, request.char,
+                                                    request.clock, request.id)
                 elif request.operation == DEL:
-                    status, log_id = document.apply(request.operation, request.position - 1, request.char, request.clock, request.id)
+                    status, log_id = document.apply(request.operation, request.position - 1, request.char,
+                                                    request.clock, request.id)
                 else:
                     raise Exception
             else:
-                status, log_id = document.apply(request.operation, request.position, request.char, request.clock, request.id)
+                status, log_id = document.apply(request.operation, request.position, request.char, request.clock,
+                                                request.id)
             document.get_log().set_true(log_id)
         # print(f"Rollback Clock: {clock}")
     else:  # normal broadcast
@@ -125,9 +125,10 @@ def handle_user_request(request, local_clock):
 
     if status == 0:
         clock.increase()
-        print(f"increasing clock to: {clock.get()} before broadcast")
+        local_clock = clock.get()  # FIXME: CRITICAL REGION
+        print(f"increasing clock to: {local_clock} before broadcast")
         time.sleep(3)
-        status = broadcast(request, log_id)
+        status = broadcast(request, log_id, local_clock)
 
     return status
 
@@ -136,9 +137,10 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         global clock
+        print(f"clock when receiving: {clock.get()}")
         clock.update(request.clock)
         local_clock = clock.get()
-        # print(f"increasing clock to: {clock} after receiving")
+        print(f"increasing clock to: {clock.get()} after receiving")
         print(f"msg clock: {request.clock} - curr clock: {local_clock} - transmitter: {request.transmitter}")
         if request.transmitter == SERVER:
             status = handle_server_request(request, local_clock)
