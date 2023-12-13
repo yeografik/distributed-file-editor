@@ -7,6 +7,7 @@ class Document:
     def __init__(self, content: str = ""):
         self._content = content
         self.logger = Logger()
+        self.logging = True
         self.corrected_operations = []  # [0] Operation, [1] int: pos,
         # [2] string: char, [3] int: clock, [4] int: port
 
@@ -46,21 +47,24 @@ class Document:
             self.corrected_operations.insert(0, operation)
 
         for inverse_operation in inverse_operations:
-            print(f"applying {inverse_operation}")
+            # print(f"applying {inverse_operation}")
+            self.logging = False
             self.apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], request_clock, inverse_operation[3])
+            self.logging = True
+        print(f"Rollback done: {self._content}")
 
     def apply_rollback_operations(self, prev_op, prev_pos):
         status = 0
         for (op, pos, char, clock, node_id) in self.corrected_operations:
             if prev_pos < pos:
                 if prev_op == INS:
-                    status += self.apply(op, pos+1, char, clock, node_id)[0]
+                    status += self.apply(op, pos+1, char, clock, node_id)
                 elif prev_op == DEL:
-                    status += self.apply(op, pos-1, char, clock, node_id)[0]
+                    status += self.apply(op, pos-1, char, clock, node_id)
                 else:
                     raise Exception
             else:
-                status += self.apply(op, pos, char, clock, node_id)[0]
+                status += self.apply(op, pos, char, clock, node_id)
         self.corrected_operations.clear()
         return status
 
@@ -74,5 +78,6 @@ class Document:
         else:
             raise Exception(f"Unknown operation {operation}")
 
-        log_id = self.logger.log((operation, pos, elem, local_clock, node_id))
-        return 0, log_id
+        if self.logging:
+            self.logger.log((operation, pos, elem, local_clock, node_id))
+        return 0
