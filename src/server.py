@@ -1,4 +1,5 @@
 import sys
+import threading
 import time
 from concurrent import futures
 import logging
@@ -18,6 +19,7 @@ self_port = int(me[1])
 document = Document()
 clock = Clock()
 self_node = Node(me, document, clock)
+lock = threading.Lock()
 
 
 def signal_handler(sig, frame):
@@ -51,6 +53,18 @@ def broadcast(request, local_clock):
                 else:
                     raise e
     return status
+
+
+class Thread(threading.Thread):
+    def __init__(self, request, local_clock):
+        threading.Thread.__init__(self)
+        self.request = request
+        self.local_clock = local_clock
+
+    def run(self):
+        status = broadcast(self.request, self.local_clock)
+        if status != 0:
+            print(f"status for request {self.request} is {status}")
 
 
 def must_local_node_do_rollback(request_port, last_port):
@@ -114,8 +128,10 @@ def handle_user_request(request, local_clock):
     if status == 0:
         local_clock = clock.increase()
         print(f"increasing clock to: {local_clock} before broadcast")
-        time.sleep(3)
-        status = broadcast(request, local_clock)
+        # time.sleep(3)
+        t = Thread(request, local_clock)
+        t.start()
+        # status = broadcast(request, local_clock)
 
     return status
 
@@ -151,7 +167,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     editor_pb2_grpc.add_EditorServicer_to_server(Editor(), server)
     (ip, port) = me
     server.add_insecure_port(f"{ip}:{port}")
