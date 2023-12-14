@@ -55,12 +55,24 @@ def broadcast(request, local_clock):
                     self_node.remove_active_node(ip, port)
                 else:
                     raise e
+    print("Broadcast finished")
     return status
+
+
+class BroadcastThread(threading.Thread):
+
+    def __init__(self, request, local_clock):
+        super().__init__()
+        self._request = request
+        self._local_clock = local_clock
+
+    def run(self):
+        broadcast(self._request, self._local_clock)
 
 
 def handle_server_request(request, local_clock):
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
-    request_clock = request.clock-1  # Who execute the cmd of the request made it with clock-1
+    request_clock = request.clock - 1  # Who execute the cmd of the request made it with clock-1
     if request_clock <= local_clock:  # conflict
         document.do_rollback(request_clock, request.id)
         status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
@@ -69,7 +81,9 @@ def handle_server_request(request, local_clock):
         status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
 
     print(f"Content: {document.get_content()}")
+    print("releasing lock")
     lock.release()
+    print("lock released")
     return status
 
 
@@ -87,10 +101,16 @@ def handle_user_request(request, local_clock):
         local_clock = clock.increase()
         print(f"increasing clock to: {local_clock} before broadcast")
         # time.sleep(3)
+        print("releasing lock")
+        t = BroadcastThread(request, local_clock)
+        t.start()
         lock.release()
-        status = broadcast(request, local_clock)
+        print("lock released")
+        # status = broadcast(request, local_clock)
     else:
+        print("releasing lock")
         lock.release()
+        print("lock released")
 
     return status
 
@@ -99,7 +119,9 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         global clock
+        print("acquiring lock")
         lock.acquire(blocking=True, timeout=-1)
+        print("lock acquired")
         print(f"clock when receiving: {clock.get()}")
         local_clock = clock.update(request.clock)
         print(f"increasing clock to: {clock.get()} after receiving")
