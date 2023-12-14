@@ -4,21 +4,21 @@ import threading
 class Clock:
 
     def __init__(self):
-        self.time = 0
-        self.lock = threading.Lock()
+        self.__time = 0
+        self.__lock = threading.Lock()
 
     def increase(self):
-        with self.lock:
-            self.time += 1
-            return self.time
+        with self.__lock:
+            self.__time += 1
+            return self.__time
 
     def update(self, clock_time):
-        with self.lock:
-            self.time = max(self.time + 1, clock_time)
-            return self.time
+        with self.__lock:
+            self.__time = max(self.__time + 1, clock_time)
+            return self.__time
 
     def get(self):
-        return self.time
+        return self.__time
 
     def set(self, time):
-        self.time = time
+        self.__time = time

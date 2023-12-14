@@ -16,7 +16,7 @@ def request_data_to(node, document: Document):
         response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
         # TODO: now we have one file, in the future the user could want to access to other files
         document.set_content(response.content)
-        logger = document.get_log()
+        logger = document.get_logger()
         for cmd in stub.RequestLog(editor_pb2.FileInfo(file_name="file.txt")):
             logger.log(Cmd(cmd.operation, cmd.position, cmd.id, cmd.clock, cmd.char))
 
@@ -58,7 +58,7 @@ class Node:
             print(f"Data loaded from node: {ip}:{port}")
 
         print("Content: " + self.document.get_content())
-        self.document.get_log().print_log()
+        self.document.get_logger().print_log()
 
     def get_active_nodes(self):
         return self.active_nodes

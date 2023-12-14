@@ -20,12 +20,12 @@ self_port = int(me[1])
 document = Document()
 clock = Clock()
 self_node = Node(me, document, clock)
-lock = threading.Lock()
+node_lock = threading.Lock()
 
 
 def signal_handler(sig, frame):
     global document
-    print("ctrl+c pressed")
+    print("\nctrl+c pressed")
     with open("file.txt", 'w') as f:
         f.write(document.get_content())
     sys.exit(0)
@@ -36,12 +36,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def broadcast(request, local_clock):
     status = 0
-    if self_port % 2 == 0:
-        print("sleeping")
-        time.sleep(2)
-        print("wake up")
-    for (ip, port) in self_node.get_active_nodes() - {me}:  # broadcasting the cmd
-        # print(f"broadcasting to: {ip}:{port}")
+    for (ip, port) in self_node.get_active_nodes() - {me}:
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
             try:
@@ -56,7 +51,6 @@ def broadcast(request, local_clock):
                     self_node.remove_active_node(ip, port)
                 else:
                     raise e
-    print("Broadcast finished")
     return status
 
 
@@ -72,48 +66,35 @@ class BroadcastThread(threading.Thread):
 
 
 def handle_server_request(request, local_clock):
-    print(f"request_clock: {request.clock} - local clock: {local_clock}")
+    # print(f"request_clock: {request.clock} - local clock: {local_clock}")
     request_clock = request.clock - 1  # Who execute the cmd of the request made it with clock-1
     cmd = Cmd(request.operation, request.position, request.id, request_clock, request.char)
-    if request_clock <= local_clock:  # conflict
+    if request_clock <= local_clock:
         document.do_rollback(request_clock, request.id)
         status = document.apply(cmd)
-        # prev_cmd = document.get_log().get_last()
         status += document.apply_rollback_operations()
-    else:  # normal broadcast
+    else:
         status = document.apply(cmd)
 
     print(f"Content: {document.get_content()}")
-    print("releasing lock")
-    lock.release()
-    print("lock released")
+    node_lock.release()
     return status
 
 
 def handle_user_request(request, local_clock):
     global clock
-    # if request.operation == 0:
-    #   print(f"receiving command: ins('{request.char}', {request.position})")
-    # else:
-    #   print(f"receiving command: del({request.position})")
-    # print(f"from: user {request.id} through the app")
     cmd = Cmd(request.operation, request.position, self_port, local_clock, request.char)
     status = document.apply(cmd)
     print(f"Content: {document.get_content()}")
 
     if status == 0:
         local_clock = clock.increase()
-        print(f"increasing clock to: {local_clock} before broadcast")
-        # time.sleep(3)
-        print("releasing lock")
+        # print(f"increasing clock to: {local_clock} before broadcast")
         t = BroadcastThread(request, local_clock)
         t.start()
-        lock.release()
-        print("lock released")
+        node_lock.release()
     else:
-        print("releasing lock")
-        lock.release()
-        print("lock released")
+        node_lock.release()
 
     return status
 
@@ -122,13 +103,11 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         global clock
-        print("acquiring lock")
-        lock.acquire(blocking=True, timeout=-1)
-        print("lock acquired")
-        print(f"clock when receiving: {clock.get()}")
+        node_lock.acquire(blocking=True, timeout=-1)
+        # print(f"clock when receiving: {clock.get()}")
         local_clock = clock.update(request.clock)
-        print(f"increasing clock to: {clock.get()} after receiving")
-        print(f"msg clock: {request.clock} - curr clock: {local_clock} - transmitter: {request.transmitter}")
+        # print(f"increasing clock to: {clock.get()} after receiving")
+        # print(f"msg clock: {request.clock} - curr clock: {local_clock} - transmitter: {request.transmitter}")
         if request.transmitter == SERVER:
             status = handle_server_request(request, local_clock)
         elif request.transmitter == USER:
@@ -142,21 +121,21 @@ class Editor(editor_pb2_grpc.EditorServicer):
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
-        lock.acquire()
+        node_lock.acquire()
         node = (request.ip, request.port)
         self_node.add_active_node(node)
-        lock.release()
+        node_lock.release()
         return editor_pb2.NotifyResponse(status=True, clock=clock.get())
 
     def RequestContent(self, request, context):
-        lock.acquire(blocking=True, timeout=5)
+        node_lock.acquire(blocking=True, timeout=5)
         return editor_pb2.Content(content=document.get_content())
 
     def RequestLog(self, request, context):
-        for log in document.get_log().get_log():
+        for log in document.get_log():
             yield editor_pb2.Command(operation=log.operation(), position=log.position(), char=log.elem(),
                                      clock=log.when(), id=log.who(), transmitter=SERVER)
-        lock.release()
+        node_lock.release()
 
 
 def serve():
