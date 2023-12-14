@@ -30,6 +30,11 @@ class EditorStub(object):
                 request_serializer=editor__pb2.FileInfo.SerializeToString,
                 response_deserializer=editor__pb2.Content.FromString,
                 )
+        self.RequestLog = channel.unary_stream(
+                '/editor.Editor/RequestLog',
+                request_serializer=editor__pb2.FileInfo.SerializeToString,
+                response_deserializer=editor__pb2.Command.FromString,
+                )
 
 
 class EditorServicer(object):
@@ -57,6 +62,13 @@ class EditorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RequestLog(self, request, context):
+        """Request the log of the file
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_EditorServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -74,6 +86,11 @@ def add_EditorServicer_to_server(servicer, server):
                     servicer.RequestContent,
                     request_deserializer=editor__pb2.FileInfo.FromString,
                     response_serializer=editor__pb2.Content.SerializeToString,
+            ),
+            'RequestLog': grpc.unary_stream_rpc_method_handler(
+                    servicer.RequestLog,
+                    request_deserializer=editor__pb2.FileInfo.FromString,
+                    response_serializer=editor__pb2.Command.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -134,5 +151,22 @@ class Editor(object):
         return grpc.experimental.unary_unary(request, target, '/editor.Editor/RequestContent',
             editor__pb2.FileInfo.SerializeToString,
             editor__pb2.Content.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RequestLog(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(request, target, '/editor.Editor/RequestLog',
+            editor__pb2.FileInfo.SerializeToString,
+            editor__pb2.Command.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

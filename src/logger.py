@@ -1,4 +1,5 @@
 from command import Command
+from typing import List
 
 
 class Logger:
@@ -8,6 +9,9 @@ class Logger:
 
     def log(self, cmd: Command):
         self._log.append(cmd)
+        self.print_log()
+
+    def print_log(self):
         print("log:")
         for item in self._log:
             print(f"{item}")
@@ -16,7 +20,7 @@ class Logger:
     def get_last(self) -> Command:
         return self._log[-1]
 
-    def get_log(self):
+    def get_log(self) -> List[Command]:
         return self._log
 
     def get_events_after(self, clock, port) -> [Command]:

@@ -6,15 +6,19 @@ from protos.generated import editor_pb2_grpc
 from protos.generated import editor_pb2
 from doc import Document
 from clock import Clock
+from command import Command as Cmd
 
 
-def request_content_to(node, document: Document):
+def request_data_to(node, document: Document):
     ip, port = node
     with grpc.insecure_channel(f"{ip}:{port}") as channel:
         stub = editor_pb2_grpc.EditorStub(channel)
         response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
         # TODO: now we have one file, in the future the user could want to access to other files
-        return document.set_content(response.content)
+        document.set_content(response.content)
+        logger = document.get_log()
+        for cmd in stub.RequestLog(editor_pb2.FileInfo(file_name="file.txt")):
+            logger.log(Cmd(cmd.operation, cmd.position, cmd.id, cmd.clock, cmd.char))
 
 
 def read_local_file_content(document: Document):
@@ -49,11 +53,12 @@ class Node:
             print("Content loaded from local file")
         else:
             node = next(iter(self.active_nodes))
-            request_content_to(node, self.document)
+            request_data_to(node, self.document)
             ip, port = node
-            print(f"Content loaded from node: {ip}:{port}")
+            print(f"Data loaded from node: {ip}:{port}")
 
         print("Content: " + self.document.get_content())
+        self.document.get_log().print_log()
 
     def get_active_nodes(self):
         return self.active_nodes
