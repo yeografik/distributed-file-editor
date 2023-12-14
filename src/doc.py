@@ -1,6 +1,6 @@
 from logger import Logger
 from protos.generated.editor_pb2 import *
-
+from src.command import Command
 
 class Document:
 
@@ -14,14 +14,14 @@ class Document:
     def get_log(self):
         return self.logger
 
-    def insert_at(self, char, idx):
+    def _insert_at(self, char, idx):
         if len(char) != 1:
             raise Exception("Character should be inserted")
         if idx not in range(0, len(self._content) + 1):
             raise Exception(f"insert {char} at {idx} - Index out of bound on '{self._content}'")
         self._content = self._content[:idx] + char + self._content[idx:]
 
-    def delete_at(self, idx):
+    def _delete_at(self, idx):
         if idx not in range(0, len(self._content)):
             raise Exception(f"delete at {idx} - Index out of bound on '{self._content}'")
         char = self._content[idx]
@@ -68,16 +68,14 @@ class Document:
         self.corrected_operations.clear()
         return status
 
-    def apply(self, operation, pos, elem, local_clock, node_id):
+    def apply(self, cmd: Command):
 
         # TODO: this operation could fail, a try catch statement should be used
-        if operation == INS:
-            self.insert_at(elem, pos)
-        elif operation == DEL:
-            elem = self.delete_at(pos)
-        else:
-            raise Exception(f"Unknown operation {operation}")
+        if cmd.is_insertion():
+            self._insert_at(cmd.elem(), cmd.position())
+        elif cmd.is_deletion():
+            cmd.set_elem(self._delete_at(cmd.position()))
 
         if self.logging:
-            self.logger.log((operation, pos, elem, local_clock, node_id))
+            self.logger.log(cmd)
         return 0
