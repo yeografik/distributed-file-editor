@@ -39,10 +39,6 @@ def broadcast(request, local_clock):
         print("sleeping")
         time.sleep(2)
         print("wake up")
-    # print("broadcasting")
-    # active_node = list(self_node.get_active_nodes() - {me})
-    # active_node.sort(key=lambda x: x[1])
-    # print(active_node)
     for (ip, port) in self_node.get_active_nodes() - {me}:  # broadcasting the cmd
         # print(f"broadcasting to: {ip}:{port}")
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
@@ -59,49 +55,36 @@ def broadcast(request, local_clock):
                     self_node.remove_active_node(ip, port)
                 else:
                     raise e
+    print("Broadcast finished")
     return status
 
 
-def must_local_node_do_rollback(request_port, last_port):
-    return last_port > request_port
+class BroadcastThread(threading.Thread):
 
+    def __init__(self, request, local_clock):
+        super().__init__()
+        self._request = request
+        self._local_clock = local_clock
 
-def rollback_required(request_port):
-    last_operation = document.get_log().get_last()
-    print(f"this {self_port} - last {last_operation[4]} - other {request_port}")
-    if must_local_node_do_rollback(request_port, last_operation[4]):
-        print(f"{last_operation[4]} must rollback")
-    else:
-        print(f"{request_port} must rollback")
-    return must_local_node_do_rollback(request_port, last_operation[4])
+    def run(self):
+        broadcast(self._request, self._local_clock)
 
 
 def handle_server_request(request, local_clock):
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
-    if request.clock < local_clock:  # conflict
-        if rollback_required(request.id):
-            document.do_rollback(request.clock-1, request.id)
-            status = document.apply(request.operation, request.position, request.char, request.clock-1, request.id)
-            status += document.apply_rollback_operations(request.operation, request.position)
-        else:
-            pos_prev_cmd = document.get_log().get_last()[1]
-            if pos_prev_cmd < request.position:
-                if request.operation == INS:
-                    status = document.apply(request.operation, request.position + 1, request.char,
-                                            request.clock-1, request.id)
-                elif request.operation == DEL:
-                    status = document.apply(request.operation, request.position - 1, request.char,
-                                            request.clock-1, request.id)
-                else:
-                    raise Exception
-            else:
-                status = document.apply(request.operation, request.position, request.char, request.clock-1,
-                                        request.id)
+    request_clock = request.clock - 1  # Who execute the cmd of the request made it with clock-1
+    if request_clock <= local_clock:  # conflict
+        document.do_rollback(request_clock, request.id)
+        status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
+        # prev_cmd = document.get_log().get_last()
+        status += document.apply_rollback_operations()
     else:  # normal broadcast
-        status = document.apply(request.operation, request.position, request.char, request.clock-1, request.id)
+        status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
 
     print(f"Content: {document.get_content()}")
+    print("releasing lock")
     lock.release()
+    print("lock released")
     return status
 
 
@@ -119,10 +102,16 @@ def handle_user_request(request, local_clock):
         local_clock = clock.increase()
         print(f"increasing clock to: {local_clock} before broadcast")
         # time.sleep(3)
+        print("releasing lock")
+        t = BroadcastThread(request, local_clock)
+        t.start()
         lock.release()
-        status = broadcast(request, local_clock)
+        print("lock released")
+        # status = broadcast(request, local_clock)
     else:
+        print("releasing lock")
         lock.release()
+        print("lock released")
 
     return status
 
@@ -131,7 +120,9 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         global clock
+        print("acquiring lock")
         lock.acquire(blocking=True, timeout=-1)
+        print("lock acquired")
         print(f"clock when receiving: {clock.get()}")
         local_clock = clock.update(request.clock)
         print(f"increasing clock to: {clock.get()} after receiving")
@@ -159,7 +150,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     editor_pb2_grpc.add_EditorServicer_to_server(Editor(), server)
     (ip, port) = me
     server.add_insecure_port(f"{ip}:{port}")
