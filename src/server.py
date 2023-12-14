@@ -39,10 +39,6 @@ def broadcast(request, local_clock):
         print("sleeping")
         time.sleep(2)
         print("wake up")
-    # print("broadcasting")
-    # active_node = list(self_node.get_active_nodes() - {me})
-    # active_node.sort(key=lambda x: x[1])
-    # print(active_node)
     for (ip, port) in self_node.get_active_nodes() - {me}:  # broadcasting the cmd
         # print(f"broadcasting to: {ip}:{port}")
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
@@ -62,43 +58,15 @@ def broadcast(request, local_clock):
     return status
 
 
-def must_local_node_do_rollback(request_port, last_port):
-    return last_port > request_port
-
-
-def rollback_required(request_port):
-    last_operation = document.get_log().get_last()
-    print(f"this {self_port} - last {last_operation[4]} - other {request_port}")
-    if must_local_node_do_rollback(request_port, last_operation[4]):
-        print(f"{last_operation[4]} must rollback")
-    else:
-        print(f"{request_port} must rollback")
-    return must_local_node_do_rollback(request_port, last_operation[4])
-
-
 def handle_server_request(request, local_clock):
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
-    if request.clock < local_clock:  # conflict
-        if rollback_required(request.id):
-            document.do_rollback(request.clock-1, request.id)
-            status = document.apply(request.operation, request.position, request.char, request.clock-1, request.id)
-            status += document.apply_rollback_operations(request.operation, request.position)
-        else:
-            pos_prev_cmd = document.get_log().get_last()[1]
-            if pos_prev_cmd < request.position:
-                if request.operation == INS:
-                    status = document.apply(request.operation, request.position + 1, request.char,
-                                            request.clock-1, request.id)
-                elif request.operation == DEL:
-                    status = document.apply(request.operation, request.position - 1, request.char,
-                                            request.clock-1, request.id)
-                else:
-                    raise Exception
-            else:
-                status = document.apply(request.operation, request.position, request.char, request.clock-1,
-                                        request.id)
+    request_clock = request.clock-1  # Who execute the cmd of the request made it with clock-1
+    if request_clock <= local_clock:  # conflict
+        document.do_rollback(request_clock, request.id)
+        status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
+        status += document.apply_rollback_operations(request.operation, request.position)
     else:  # normal broadcast
-        status = document.apply(request.operation, request.position, request.char, request.clock-1, request.id)
+        status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
 
     print(f"Content: {document.get_content()}")
     lock.release()
