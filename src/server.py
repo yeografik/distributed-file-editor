@@ -64,7 +64,8 @@ def handle_server_request(request, local_clock):
     if request_clock <= local_clock:  # conflict
         document.do_rollback(request_clock, request.id)
         status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
-        status += document.apply_rollback_operations(request.operation, request.position)
+        # prev_cmd = document.get_log().get_last()
+        status += document.apply_rollback_operations()
     else:  # normal broadcast
         status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
 
@@ -127,7 +128,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
     editor_pb2_grpc.add_EditorServicer_to_server(Editor(), server)
     (ip, port) = me
     server.add_insecure_port(f"{ip}:{port}")
