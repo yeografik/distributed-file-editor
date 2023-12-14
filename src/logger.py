@@ -1,4 +1,5 @@
-from src.command import Command
+from command import Command
+
 
 class Logger:
 
@@ -22,7 +23,7 @@ class Logger:
         operations_out_of_time = []
         index_to_remove = []
         for i in range(0, len(self._log)):
-            cmd: Command = self._log[-1-i]
+            cmd: Command = self._log[-1 - i]
             # print(f"clock: {clock - 1}, command {i} clock: {cmd[4]}")
             print(f"checking cmd log: {cmd}")
             if clock < cmd.when():
@@ -31,7 +32,8 @@ class Logger:
                 index_to_remove.append(len(self._log) - 1 - i)
             elif clock == cmd.when():
                 if port < cmd.who():
-                    print(f"added because: clock == cmd.when ({clock} == {cmd.when()}) and port < cmd.who ({port} < {cmd.who()})")
+                    print(
+                        f"added because: clock == cmd.when ({clock} == {cmd.when()}) and port < cmd.who ({port} < {cmd.who()})")
                     operations_out_of_time.append(cmd)
                     index_to_remove.append(len(self._log) - 1 - i)
             else:
@@ -39,4 +41,3 @@ class Logger:
         for index in index_to_remove:
             del self._log[index]
         return operations_out_of_time
-

@@ -1,6 +1,6 @@
 from logger import Logger
-from protos.generated.editor_pb2 import *
-from src.command import Command
+from command import Command
+
 
 class Document:
 
@@ -8,7 +8,7 @@ class Document:
         self._content = content
         self.logger = Logger()
         self.logging = True
-        self.corrected_operations = []  # [0] Operation, [1] int: pos,
+        self.corrected_commands = []  # [0] Operation, [1] int: pos,
         # [2] string: char, [3] int: clock, [4] int: port
 
     def get_log(self):
@@ -37,27 +37,24 @@ class Document:
 
     def do_rollback(self, request_clock, request_port):
         print("Doing rollback")
-        operations = self.logger.get_events_after(request_clock, request_port)
-        inverse_operations = []
-        for operation in operations:
-            op = DEL if operation[0] == INS else INS
-            pos = operation[1]
-            char = operation[2]
-            inverse_operations.append((op, pos, char, operation[4]))
-            self.corrected_operations.insert(0, operation)
+        commands_to_revert = self.logger.get_events_after(request_clock, request_port)
+        inverse_commands = []
+        for cmd in commands_to_revert:
+            inverse_commands.append(cmd.get_inverse())
+            self.corrected_commands.insert(0, cmd)
 
-        for inverse_operation in inverse_operations:
-            # print(f"applying {inverse_operation}")
+        for cmd in inverse_commands:
+            # print(f"applying {cmd}")
             self.logging = False
-            self.apply(inverse_operation[0], inverse_operation[1], inverse_operation[2], request_clock, inverse_operation[3])
+            self.apply(cmd)
             self.logging = True
         print(f"Rollback done: {self._content}")
 
     def apply_rollback_operations(self):
         status = 0
-        for (op, pos, char, clock, node_id) in self.corrected_operations:
-            status += self.apply(op, pos, char, clock, node_id)
-        self.corrected_operations.clear()
+        for cmd in self.corrected_commands:
+            status += self.apply(cmd)
+        self.corrected_commands.clear()
         return status
 
     def apply(self, cmd: Command):

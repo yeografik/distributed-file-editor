@@ -1,4 +1,4 @@
-from src.protos.generated.editor_pb2 import INS, DEL
+from protos.generated.editor_pb2 import INS, DEL
 
 
 class Command:
@@ -38,6 +38,12 @@ class Command:
             self._elem = elem
         elif self.is_insertion():
             raise Exception("Can not change the element inserted")
+
+    def get_inverse(self):
+        return Command(self._inverse_operation(), self.position(), self.who(), self.when(), self.elem())
+
+    def _inverse_operation(self):
+        return DEL if self.operation() == INS else INS
 
     def __str__(self):
         return f"({self.operation()}, {self.position()}, {self.elem()}, {self.when()}, {self.who()})"

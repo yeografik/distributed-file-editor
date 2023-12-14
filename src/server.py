@@ -13,6 +13,7 @@ from protos.generated.editor_pb2 import *
 from doc import Document
 from node import Node
 from clock import Clock
+from command import Command as Cmd
 
 me = (sys.argv[1], sys.argv[2])
 self_port = int(me[1])
@@ -73,13 +74,14 @@ class BroadcastThread(threading.Thread):
 def handle_server_request(request, local_clock):
     print(f"request_clock: {request.clock} - local clock: {local_clock}")
     request_clock = request.clock - 1  # Who execute the cmd of the request made it with clock-1
+    cmd = Cmd(request.operation, request.position, request.id, request_clock, request.char)
     if request_clock <= local_clock:  # conflict
         document.do_rollback(request_clock, request.id)
-        status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
+        status = document.apply(cmd)
         # prev_cmd = document.get_log().get_last()
         status += document.apply_rollback_operations()
     else:  # normal broadcast
-        status = document.apply(request.operation, request.position, request.char, request_clock, request.id)
+        status = document.apply(cmd)
 
     print(f"Content: {document.get_content()}")
     print("releasing lock")
@@ -95,7 +97,8 @@ def handle_user_request(request, local_clock):
     # else:
     #   print(f"receiving command: del({request.position})")
     # print(f"from: user {request.id} through the app")
-    status = document.apply(request.operation, request.position, request.char, local_clock, self_port)
+    cmd = Cmd(request.operation, request.position, self_port, local_clock, request.char)
+    status = document.apply(cmd)
     print(f"Content: {document.get_content()}")
 
     if status == 0:
@@ -107,7 +110,6 @@ def handle_user_request(request, local_clock):
         t.start()
         lock.release()
         print("lock released")
-        # status = broadcast(request, local_clock)
     else:
         print("releasing lock")
         lock.release()
@@ -141,7 +143,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def Notify(self, request, context):
         node = (request.ip, request.port)
-        # print(f"Node: {request.ip}:{request.port} is now connected")
         self_node.add_active_node(node)
         return editor_pb2.NotifyResponse(status=True, clock=clock.get())
 
@@ -150,12 +151,11 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=5))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
     editor_pb2_grpc.add_EditorServicer_to_server(Editor(), server)
     (ip, port) = me
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
-    # print("Server started, listening on " + port)
     server.wait_for_termination()
 
 
