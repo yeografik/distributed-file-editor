@@ -1,6 +1,6 @@
 # distributed-file-editor
 
-*Se eligio como proyecto final de aprobacion la creacion un sistema distribuido para la
+*Se eligió como proyecto final de aprobación la creacion un sistema distribuido para la
 edicion en tiempo real de archivos.*
 
 ## Autores
@@ -21,8 +21,8 @@ utilizar el sistema.
 ### How to use
 
 1. En el archivo ```nodes.js``` se encuentra la informacion
-acerca de los nodos que conforman en la red. Esta puede ser modificada
-segun se lo requiera para agregar o quitar nuevo nodos.
+acerca de los nodos que conforman la red. Esta puede ser modificada
+segun se requiera para agregar o quitar nuevos nodos.
 2. Una vez seteado los nodos de la red se puede proceder a
 iniciarlos ejecutando ```python3 server.py [ip] [port]```, por ejemplo 
 ```python3 server.py localhost 5001```. Este proceso puede repetirse para
@@ -33,23 +33,24 @@ de la aplicacion con alguno de los mismos, para ellos se debera ejecutar
 
 Nota: los nodos pueden irse levantando mientras se va usando la aplicacion, 
 lo importante es que siempre exista al menos uno para que los usuarios de 
-la aplicacion puedan conectarse a el. Pero a medida que haya mas nodos
+la aplicacion pueda conectarse a el. Pero a medida que haya más nodos
 conectados los usuarios de la aplicacion podran conectarse a los distintos
 nodo y editar en conjunto el contenido del documento.
 
-## Deciciones de implementacion
+## Decisiones de implementacion
 
-* Se opto de momento por la edicion de un unico archivo.
-Para la edicion de multiples archivos simplemente bastaria
-solicitar un archivo especifico a partir de la aplicacion, y
-,en caso de que no exista, crearlo. Por cuestion de simplicidad
-es que se ha tomado esta decision.
+* Se optó de momento por la edición de un único archivo.
+Para la edicion de multiples archivos simplemente bastaría
+solicitar un archivo especifico a partir de la aplicación, y
+,en caso de que no existe, crearlo. Por cuestión de simplicidad
+es que se ha tomado esta decisión.
 * Cuando se inicia un nuevo nodo este se presenta ante aquellos
 que ya forman parte de la red para que estos pueda registrarlo
-un nodo activo, mientras que el nodo en cuestion registra como
+un nodo activo, mientras que el nodo en cuestión registra como
 nodos activos a todos aquellos que le respondan.
   * Durante este proceso el nodo, en caso de que no sea el primer
-  nodo de la red, solicita la informacion del documento a alguno
-  de los nodos que si forman parte de esta. En caso de que este
-  sea el primer nodo de la red, la informacion sera levantada de
-  un archivo local, en caso de existir, sino sera creado.
+  nodo de la red, solicita la información del documento a alguno
+  de los nodos que sí forman parte de esta. En caso de que este
+  sea el primer nodo de la red, la información será levantada de
+  un archivo local, en caso de existir, sino será creado.
+
