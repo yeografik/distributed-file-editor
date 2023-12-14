@@ -28,6 +28,9 @@ service Editor {
 
     // Request the content of the file
     rpc RequestContent(FileInfo) returns (Content) {}
+
+    // Request the log of the file
+    rpc RequestLog(FileInfo) returns (stream Command) {}
 }
 
 enum Operation {

@@ -142,12 +142,21 @@ class Editor(editor_pb2_grpc.EditorServicer):
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
+        lock.acquire()
         node = (request.ip, request.port)
         self_node.add_active_node(node)
+        lock.release()
         return editor_pb2.NotifyResponse(status=True, clock=clock.get())
 
     def RequestContent(self, request, context):
+        lock.acquire(blocking=True, timeout=5)
         return editor_pb2.Content(content=document.get_content())
+
+    def RequestLog(self, request, context):
+        for log in document.get_log().get_log():
+            yield editor_pb2.Command(operation=log.operation(), position=log.position(), char=log.elem(),
+                                     clock=log.when(), id=log.who(), transmitter=SERVER)
+        lock.release()
 
 
 def serve():

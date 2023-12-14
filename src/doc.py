@@ -8,8 +8,7 @@ class Document:
         self._content = content
         self.logger = Logger()
         self.logging = True
-        self.corrected_commands = []  # [0] Operation, [1] int: pos,
-        # [2] string: char, [3] int: clock, [4] int: port
+        self.corrected_commands = []  # [0] Operation, [1] int: pos, [2] string: char, [3] int: clock, [4] int: port
 
     def get_log(self):
         return self.logger
