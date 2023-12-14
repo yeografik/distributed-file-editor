@@ -53,18 +53,10 @@ class Document:
             self.logging = True
         print(f"Rollback done: {self._content}")
 
-    def apply_rollback_operations(self, prev_op, prev_pos):
+    def apply_rollback_operations(self):
         status = 0
         for (op, pos, char, clock, node_id) in self.corrected_operations:
-            if prev_pos < pos:
-                if prev_op == INS:
-                    status += self.apply(op, pos+1, char, clock, node_id)
-                elif prev_op == DEL:
-                    status += self.apply(op, pos-1, char, clock, node_id)
-                else:
-                    raise Exception
-            else:
-                status += self.apply(op, pos, char, clock, node_id)
+            status += self.apply(op, pos, char, clock, node_id)
         self.corrected_operations.clear()
         return status
 
