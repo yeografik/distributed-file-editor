@@ -25,12 +25,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         self.clock = Clock()
         self.node = Node(self.me, self.document, self.clock)
         self.node_lock = threading.Lock()
-        self.__setup()
-
-    def __setup(self):
-        self.node.load_server_nodes()
-        self.node.notify_nodes()
-        self.node.load_data()
 
     def SendCommand(self, request, context):
         self.node_lock.acquire(blocking=True, timeout=-1)

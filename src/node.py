@@ -36,6 +36,9 @@ class Node:
         self.document = document
         self.clock = clock
         self.me = me
+        self.load_server_nodes()
+        self.notify_nodes()
+        self.load_data()
 
     def load_server_nodes(self):
         with open("nodes.json") as f:
