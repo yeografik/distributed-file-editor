@@ -38,7 +38,6 @@ class Document:
         self.__content = content
 
     def do_rollback(self, request_clock, request_port):
-        print("Doing rollback")
         commands_to_revert = self.__logger.get_events_after(request_clock, request_port)
         inverse_commands = []
         for cmd in commands_to_revert:
@@ -50,7 +49,6 @@ class Document:
             self.__logging = False
             self.apply(cmd)
             self.__logging = True
-        print(f"Rollback done: {self.__content}")
 
     def apply_rollback_operations(self):
         status = 0
