@@ -9,25 +9,6 @@ from clock import Clock
 from command import Command as Cmd
 
 
-def request_data_to(node, document: Document):
-    ip, port = node
-    with grpc.insecure_channel(f"{ip}:{port}") as channel:
-        stub = editor_pb2_grpc.EditorStub(channel)
-        response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
-        # TODO: now we have one file, in the future the user could want to access to other files
-        document.set_content(response.content)
-        logger = document.get_logger()
-        for cmd in stub.RequestLog(editor_pb2.FileInfo(file_name="file.txt")):
-            logger.log(Cmd(cmd.operation, cmd.position, cmd.id, cmd.clock, cmd.char))
-
-
-def read_local_file_content(document: Document):
-    with open("file.txt", 'a+') as f:
-        f.seek(0)
-        file_content = f.read()
-        return document.set_content(file_content)
-
-
 class Node:
 
     def __init__(self, me, document: Document, clock: Clock):
@@ -52,11 +33,11 @@ class Node:
 
     def load_data(self):
         if not self.active_nodes:
-            read_local_file_content(self.document)
+            self.__read_local_file_content()
             print("Content loaded from local file")
         else:
             node = next(iter(self.active_nodes))
-            request_data_to(node, self.document)
+            self.__request_data_to(node)
             ip, port = node
             print(f"Data loaded from node: {ip}:{port}")
 
@@ -91,3 +72,20 @@ class Node:
                     print(f"Connection refused by node: {ip}:{port}")
                 else:
                     raise e
+
+    def __request_data_to(self, node):
+        ip, port = node
+        with grpc.insecure_channel(f"{ip}:{port}") as channel:
+            stub = editor_pb2_grpc.EditorStub(channel)
+            response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
+            # TODO: now we have one file, in the future the user could want to access to other files
+            self.document.set_content(response.content)
+            logger = self.document.get_logger()
+            for cmd in stub.RequestLog(editor_pb2.FileInfo(file_name="file.txt")):
+                logger.log(Cmd(cmd.operation, cmd.position, cmd.id, cmd.clock, cmd.char))
+
+    def __read_local_file_content(self):
+        with open("file.txt", 'a+') as f:
+            f.seek(0)
+            file_content = f.read()
+            return self.document.set_content(file_content)
