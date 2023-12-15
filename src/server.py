@@ -34,10 +34,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         self.node_lock.acquire(blocking=True, timeout=-1)
-        # print(f"clock when receiving: {clock.get()}")
         local_clock = self.clock.update(request.clock)
-        # print(f"increasing clock to: {clock.get()} after receiving")
-        # print(f"msg clock: {request.clock} - curr clock: {local_clock} - transmitter: {request.transmitter}")
         if request.transmitter == SERVER:
             status = self.__handle_server_request(request, local_clock)
         elif request.transmitter == USER:
@@ -45,9 +42,11 @@ class Editor(editor_pb2_grpc.EditorServicer):
         else:
             print(f"Couldn't handle request, unknown transmitter: {request.transmitter}")
             status = 1
-
         if status != 0:
             print("error, status: " + str(status))
+
+        self.document.get_logger().print_log()
+        print(self.document.get_content())
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
@@ -68,7 +67,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         self.node_lock.release()
 
     def __handle_server_request(self, request, local_clock):
-        # print(f"request_clock: {request.clock} - local clock: {local_clock}")
         request_clock = request.clock - 1  # Who execute the cmd of the request made it with clock-1
         cmd = Cmd(request.operation, request.position, request.id, request_clock, request.char)
         if request_clock <= local_clock:
@@ -78,24 +76,19 @@ class Editor(editor_pb2_grpc.EditorServicer):
         else:
             status = self.document.apply(cmd)
 
-        print(f"Content: {self.document.get_content()}")
         self.node_lock.release()
         return status
 
     def __handle_user_request(self, request, local_clock):
         cmd = Cmd(request.operation, request.position, self.port, local_clock, request.char)
         status = self.document.apply(cmd)
-        print(f"Content: {self.document.get_content()}")
-
         if status == 0:
             local_clock = self.clock.increase()
-            # print(f"increasing clock to: {local_clock} before broadcast")
             t = Broadcast(request, local_clock, self.me, self.node)
             t.start()
             self.node_lock.release()
         else:
             self.node_lock.release()
-
         return status
 
     def shutdown(self):

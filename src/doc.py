@@ -45,7 +45,6 @@ class Document:
             self.__corrected_commands.insert(0, cmd)
 
         for cmd in inverse_commands:
-            # print(f"applying {cmd}")
             self.__logging = False
             self.apply(cmd)
             self.__logging = True
@@ -58,7 +57,6 @@ class Document:
         return status
 
     def apply(self, cmd: Command):
-
         # TODO: this operation could fail, a try catch statement should be used
         if cmd.is_insertion():
             self.__insert_at(cmd.elem(), cmd.position())

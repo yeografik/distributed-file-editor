@@ -57,8 +57,8 @@ class Node:
             ip, port = node
             print(f"Data loaded from node: {ip}:{port}")
 
-        print("Content: " + self.document.get_content())
         self.document.get_logger().print_log()
+        print("Content: " + self.document.get_content())
 
     def get_active_nodes(self):
         return self.active_nodes
