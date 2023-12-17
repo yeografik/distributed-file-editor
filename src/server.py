@@ -44,11 +44,10 @@ class Editor(editor_pb2_grpc.EditorServicer):
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
-        self.node_lock.acquire()
-        node = (request.ip, request.port)
-        self.node.add_active_node(node)
-        self.node_lock.release()
-        return editor_pb2.NotifyResponse(status=True, clock=self.clock.get())
+        with self.node_lock.acquire():
+            node = (request.ip, request.port)
+            self.node.add_active_node(node)
+            return editor_pb2.NotifyResponse(status=True, clock=self.clock.get())
 
     def RequestContent(self, request, context):
         self.node_lock.acquire(blocking=True, timeout=5)
