@@ -44,7 +44,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         return editor_pb2.CommandStatus(status=status)
 
     def Notify(self, request, context):
-        with self.node_lock.acquire():
+        with self.node_lock:
             node = (request.ip, request.port)
             self.node.add_active_node(node)
             return editor_pb2.NotifyResponse(status=True, clock=self.clock.get())
