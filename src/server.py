@@ -78,7 +78,8 @@ class Editor(editor_pb2_grpc.EditorServicer):
         status = self.document.apply(cmd)
         if status == 0:
             local_clock = self.clock.increase()
-            t = Broadcast(request, local_clock, self.me, self.node)
+            current_active_nodes = self.node.get_active_nodes().copy()
+            t = Broadcast(request, local_clock, self.me, self.node, current_active_nodes)
             t.start()
             self.node_lock.release()
         else:
@@ -94,16 +95,17 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
 class Broadcast(threading.Thread):
 
-    def __init__(self, request, local_clock, sender, node: Node):
+    def __init__(self, request, local_clock, sender, node: Node, active_nodes):
         super().__init__()
         self.__request = request
         self.__local_clock = local_clock
         self.__sender = sender
         self.__node = node
+        self.__active_nodes = active_nodes
 
     def run(self):
         status = 0
-        for (ip, port) in self.__node.get_active_nodes() - {self.__sender}:
+        for (ip, port) in self.__active_nodes - {self.__sender}:
             with grpc.insecure_channel(f"{ip}:{port}") as channel:
                 stub = editor_pb2_grpc.EditorStub(channel)
                 try:
