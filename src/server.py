@@ -1,3 +1,4 @@
+import queue
 import sys
 import threading
 from concurrent import futures
@@ -15,7 +16,6 @@ from clock import Clock
 from command import Command as Cmd
 from functools import partial
 
-condition = threading.Condition()
 
 class Editor(editor_pb2_grpc.EditorServicer):
 
@@ -32,6 +32,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         self.node_lock.acquire(blocking=True, timeout=-1)
+        print(f"receiving: from: ({request.operation},{request.position},{request.char}) {request.transmitter} in time: {request.clock}")
         local_clock = self.clock.update(request.clock)
         if request.transmitter == SERVER:
             status = self.__handle_server_request(request, local_clock)
@@ -99,25 +100,18 @@ class Broadcast(threading.Thread):
 
     def __init__(self):
         super().__init__()
-        self.__cmds = []
+        self.__cmds = queue.Queue()
 
     def enqueue(self, request, local_clock, sender, node: Node, active_nodes):
-        condition.acquire()
         print(f"enqueueing: {Cmd(request.operation, request.position, request.id, local_clock, request.char)}")
-        self.__cmds.append((request, local_clock, sender, node, active_nodes))
-        condition.notify_all()
-        condition.release()
+        self.__cmds.put((request, local_clock, sender, node, active_nodes))
 
     def run(self):
         while True:
-            condition.acquire()
-            while not self.__cmds:
-                condition.wait()
-            cmd_info = self.__cmds.pop(0)
+            cmd_info = self.__cmds.get()
             request = cmd_info[0]
             print(f"broadcasting: {Cmd(request.operation, request.position, request.id, cmd_info[1], request.char)}")
             self.__broadcast(cmd_info)
-            condition.release()
 
     @staticmethod
     def __broadcast(cmd_info):
@@ -137,6 +131,8 @@ class Broadcast(threading.Thread):
                     if rpc_state.code == StatusCode.UNAVAILABLE:
                         print(f"node: {ip}:{port} is down")
                         node.remove_active_node(ip, port)
+                    elif rpc_state.code == StatusCode.DEADLINE_EXCEEDED:
+                        print("Timeout in broadcast")
                     else:
                         raise e
         return status
