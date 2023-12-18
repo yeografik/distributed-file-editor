@@ -103,6 +103,7 @@ class Broadcast(threading.Thread):
 
     def enqueue(self, request, local_clock, sender, node: Node, active_nodes):
         condition.acquire()
+        print(f"enqueueing: {Cmd(request.operation, request.position, request.id, local_clock, request.char)}")
         self.__cmds.append((request, local_clock, sender, node, active_nodes))
         condition.notify_all()
         condition.release()
@@ -113,6 +114,8 @@ class Broadcast(threading.Thread):
             while not self.__cmds:
                 condition.wait()
             cmd_info = self.__cmds.pop(0)
+            request = cmd_info[0]
+            print(f"broadcasting: {Cmd(request.operation, request.position, request.id, cmd_info[1], request.char)}")
             self.__broadcast(cmd_info)
             condition.release()
 
