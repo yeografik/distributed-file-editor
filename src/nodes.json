@@ -19,6 +19,26 @@
         {
             "ip": "localhost",
             "port": "5005"
+        },
+        {
+            "ip": "localhost",
+            "port": "5006"
+        },
+        {
+            "ip": "localhost",
+            "port": "5007"
+        },
+        {
+            "ip": "localhost",
+            "port": "5008"
+        },
+        {
+            "ip": "localhost",
+            "port": "5009"
+        },
+        {
+            "ip": "localhost",
+            "port": "5010"
         }
     ]
 

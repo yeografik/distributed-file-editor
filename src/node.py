@@ -48,7 +48,10 @@ class Node:
         return self.active_nodes
 
     def remove_active_node(self, ip, port):
-        self.active_nodes.remove((ip, port))
+        try:
+            self.active_nodes.remove((ip, port))
+        except KeyError as e:
+            return
 
     def add_active_node(self, node):
         self.active_nodes.add(node)
