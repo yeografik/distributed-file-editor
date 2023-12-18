@@ -25,6 +25,9 @@ class Editor(editor_pb2_grpc.EditorServicer):
         self.clock = Clock()
         self.node = Node(self.me, self.document, self.clock)
         self.node_lock = threading.Lock()
+        self.cmd_to_broadcast = []
+        self.__broadcast_t = Broadcast()
+        self.__broadcast_t.start()
 
     def SendCommand(self, request, context):
         self.node_lock.acquire(blocking=True, timeout=-1)
@@ -78,8 +81,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         if status == 0:
             local_clock = self.clock.increase()
             current_active_nodes = self.node.get_active_nodes().copy()
-            t = Broadcast(request, local_clock, self.me, self.node, current_active_nodes)
-            t.start()
+            self.__broadcast_t.enqueue(request, local_clock, self.me, self.node, current_active_nodes)
             self.node_lock.release()
         else:
             self.node_lock.release()
@@ -94,30 +96,42 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
 class Broadcast(threading.Thread):
 
-    def __init__(self, request, local_clock, sender, node: Node, active_nodes):
+    def __init__(self):
         super().__init__()
-        self.__request = request
-        self.__local_clock = local_clock
-        self.__sender = sender
-        self.__node = node
-        self.__active_nodes = active_nodes
+        self.__cmds = []
+        self.__condition = threading.Condition()
+
+    def enqueue(self, request, local_clock, sender, node: Node, active_nodes):
+        self.__cmds.append((request, local_clock, sender, node, active_nodes))
+        self.__condition.notify_all()
 
     def run(self):
+        while True:
+            while not self.__cmds:
+                self.__condition.acquire()
+                self.__condition.wait()
+            cmd_info = self.__cmds[0]
+            self.__broadcast(cmd_info)
+            self.__condition.acquire()
+
+    @staticmethod
+    def __broadcast(cmd_info):
+        request, local_clock, sender, node, active_nodes = cmd_info
         status = 0
-        for (ip, port) in self.__active_nodes - {self.__sender}:
+        for (ip, port) in active_nodes - {sender}:
             with grpc.insecure_channel(f"{ip}:{port}") as channel:
                 stub = editor_pb2_grpc.EditorStub(channel)
                 try:
                     response = stub.SendCommand(
-                        editor_pb2.Command(operation=self.__request.operation, position=self.__request.position,
-                                           id=int(self.__sender[1]), transmitter=SERVER, char=self.__request.char,
-                                           clock=self.__local_clock))
+                        editor_pb2.Command(operation=request.operation, position=request.position,
+                                           id=int(sender[1]), transmitter=SERVER, char=request.char,
+                                           clock=local_clock))
                     status += response.status
                 except Exception as e:
                     rpc_state = e.args[0]
                     if rpc_state.code == StatusCode.UNAVAILABLE:
                         print(f"node: {ip}:{port} is down")
-                        self.__node.remove_active_node(ip, port)
+                        node.remove_active_node(ip, port)
                     else:
                         raise e
         return status
