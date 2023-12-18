@@ -15,6 +15,7 @@ from clock import Clock
 from command import Command as Cmd
 from functools import partial
 
+condition = threading.Condition()
 
 class Editor(editor_pb2_grpc.EditorServicer):
 
@@ -99,20 +100,21 @@ class Broadcast(threading.Thread):
     def __init__(self):
         super().__init__()
         self.__cmds = []
-        self.__condition = threading.Condition()
 
     def enqueue(self, request, local_clock, sender, node: Node, active_nodes):
+        condition.acquire()
         self.__cmds.append((request, local_clock, sender, node, active_nodes))
-        self.__condition.notify_all()
+        condition.notify_all()
+        condition.release()
 
     def run(self):
         while True:
+            condition.acquire()
             while not self.__cmds:
-                self.__condition.acquire()
-                self.__condition.wait()
-            cmd_info = self.__cmds[0]
+                condition.wait()
+            cmd_info = self.__cmds.pop(0)
             self.__broadcast(cmd_info)
-            self.__condition.acquire()
+            condition.release()
 
     @staticmethod
     def __broadcast(cmd_info):
