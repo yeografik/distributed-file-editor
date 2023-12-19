@@ -29,6 +29,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         self.cmd_to_broadcast = []
         self.__broadcast_t = Broadcast()
         self.__broadcast_t.start()
+        self.node_lock.acquire(blocking=True, timeout=-1)
 
     def SendCommand(self, request, context):
         self.node_lock.acquire(blocking=True, timeout=-1)
@@ -51,15 +52,14 @@ class Editor(editor_pb2_grpc.EditorServicer):
         return CommandStatus(status=status, content=content)
 
     def Notify(self, request, context):
-        with self.node_lock:
-            node = (request.ip, request.port)
-            print(f"adding server {request.port}")
-            self.node.add_active_node(node)
-            return NotifyResponse(status=True, clock=self.clock.get())
-
-    def RequestContent(self, request, context):
         self.node_lock.acquire()
         self.__broadcast_t.lock()
+        node = (request.ip, request.port)
+        print(f"adding server {request.port}")
+        self.node.add_active_node(node)
+        return NotifyResponse(status=True, clock=self.clock.get())
+
+    def RequestContent(self, request, context):
         return Content(content=self.document.get_content())
 
     def RequestLog(self, request, context):
@@ -120,6 +120,10 @@ class Editor(editor_pb2_grpc.EditorServicer):
         else:
             self.node_lock.release()
         return status
+
+    def load_data(self):
+        self.node.load_data()
+        self.node_lock.release()
 
     def shutdown(self):
         print("\nctrl+c pressed")
@@ -196,6 +200,7 @@ def serve():
     editor_pb2_grpc.add_EditorServicer_to_server(editor, server)
     server.add_insecure_port(f"{ip}:{port}")
     server.start()
+    editor.load_data()
     server.wait_for_termination()
 
 

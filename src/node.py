@@ -21,7 +21,6 @@ class Node:
         self.sync_lock = threading.Lock()
         self.load_server_nodes()
         self.notify_nodes()
-        self.load_data()
 
     def load_server_nodes(self):
         with open("nodes.json") as f:
