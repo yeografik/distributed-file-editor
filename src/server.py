@@ -48,24 +48,24 @@ class Editor(editor_pb2_grpc.EditorServicer):
         self.document.get_logger().print_log()
         content = self.document.get_content()
         print(content)
-        return editor_pb2.CommandStatus(status=status, content=content)
+        return CommandStatus(status=status, content=content)
 
     def Notify(self, request, context):
         with self.node_lock:
             node = (request.ip, request.port)
             print(f"adding server {request.port}")
             self.node.add_active_node(node)
-            return editor_pb2.NotifyResponse(status=True, clock=self.clock.get())
+            return NotifyResponse(status=True, clock=self.clock.get())
 
     def RequestContent(self, request, context):
         self.node_lock.acquire()
         self.__broadcast_t.lock()
-        return editor_pb2.Content(content=self.document.get_content())
+        return Content(content=self.document.get_content())
 
     def RequestLog(self, request, context):
         for log in self.document.get_log():
-            yield editor_pb2.Command(operation=log.operation(), position=log.position(), char=log.elem(),
-                                     clock=log.when(), id=log.who(), transmitter=SERVER)
+            yield Command(operation=log.operation(), position=log.position(), char=log.elem(),
+                          clock=log.when(), id=log.who(), transmitter=SERVER)
         ip, port = request.ip, request.port
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             print(f"waiting for {ip}:{port} synchronization confirmation")
@@ -163,9 +163,9 @@ class Broadcast(threading.Thread):
                 stub = editor_pb2_grpc.EditorStub(channel)
                 try:
                     response = stub.SendCommand(
-                        editor_pb2.Command(operation=request.operation, position=request.position,
-                                           id=int(sender[1]), transmitter=SERVER, char=request.char,
-                                           clock=local_clock))
+                        Command(operation=request.operation, position=request.position,
+                                id=int(sender[1]), transmitter=SERVER, char=request.char,
+                                clock=local_clock))
                     status += response.status
                 except Exception as e:
                     rpc_state = e.args[0]

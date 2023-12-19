@@ -4,10 +4,10 @@ import threading
 import grpc
 from grpc import StatusCode
 from protos.generated import editor_pb2_grpc
-from protos.generated import editor_pb2
 from doc import Document
 from clock import Clock
 from command import Command as Cmd
+from src.protos.generated.editor_pb2 import NodeInfo, FileInfo
 
 
 class Node:
@@ -79,7 +79,7 @@ class Node:
             stub = editor_pb2_grpc.EditorStub(channel)
             try:
                 my_ip, my_port = self.me
-                response = stub.Notify(editor_pb2.NodeInfo(ip=my_ip, port=my_port), timeout=5)
+                response = stub.Notify(NodeInfo(ip=my_ip, port=my_port), timeout=5)
                 if response.status:
                     print(f"Connected to node: {ip}:{port}")
                     self.clock.set(response.clock)
@@ -98,10 +98,10 @@ class Node:
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             print(f"requesting data to {ip}:{port}")
             stub = editor_pb2_grpc.EditorStub(channel)
-            response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
+            response = stub.RequestContent(FileInfo(file_name="file.txt"))
             content = response.content
             log = []
-            for cmd in stub.RequestLog(editor_pb2.FileInfo(file_name="file.txt", ip=self.me[0], port=int(self.me[1]))):
+            for cmd in stub.RequestLog(FileInfo(file_name="file.txt", ip=self.me[0], port=int(self.me[1]))):
                 log.append(Cmd(cmd.operation, cmd.position, cmd.id, cmd.clock, cmd.char))
 
             return content, log
