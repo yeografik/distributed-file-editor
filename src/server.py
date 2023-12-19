@@ -52,7 +52,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         return CommandStatus(status=status, content=content)
 
     def Notify(self, request, context):
-        self.node_lock.acquire()
         self.__broadcast_t.lock()
         node = (request.ip, request.port)
         print(f"adding server {request.port}")
@@ -85,7 +84,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
                 else:
                     raise e
         self.__broadcast_t.unlock()
-        self.node_lock.release()
 
     def AreYouReady(self, request, context):
         print(f"i am ready {self.me}")
@@ -145,7 +143,7 @@ class Broadcast(threading.Thread):
 
     def lock(self):
         print("Acquiring broadcast lock")
-        self.__broadcast_lock.acquire()
+        self.__broadcast_lock.acquire(blocking=True, timeout=5)
         print("Broadcast lock acquired")
 
     def unlock(self):
