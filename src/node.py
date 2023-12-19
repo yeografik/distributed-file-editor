@@ -57,8 +57,8 @@ class Node:
             self.sync_lock.release()
             print("releasing sync lock")
 
-        self.document.get_logger().print_log()
-        print(f"Content for {self.me}: " + self.document.get_content())
+        # self.document.get_logger().print_log()
+        print(f"Content for {self.me}: \n{self.document.get_content()}")
 
     def get_active_nodes(self):
         return self.active_nodes
@@ -78,7 +78,7 @@ class Node:
             stub = editor_pb2_grpc.EditorStub(channel)
             try:
                 my_ip, my_port = self.me
-                response = stub.Notify(NodeInfo(ip=my_ip, port=my_port), timeout=5)
+                response = stub.Notify(NodeInfo(ip=my_ip, port=my_port))
                 if response.status:
                     print(f"Connected to node: {ip}:{port}")
                     self.clock.set(response.clock)

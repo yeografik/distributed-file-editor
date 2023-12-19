@@ -29,10 +29,10 @@ class Editor(editor_pb2_grpc.EditorServicer):
         self.cmd_to_broadcast = []
         self.__broadcast_t = Broadcast()
         self.__broadcast_t.start()
-        self.node_lock.acquire(blocking=True, timeout=-1)
+        self.node_lock.acquire()
 
     def SendCommand(self, request, context):
-        self.node_lock.acquire(blocking=True, timeout=-1)
+        self.node_lock.acquire()
         print(
             f"receiving: from: {request.id} ({request.operation},{request.position},{request.char}) {request.transmitter} in time: {request.clock}")
         local_clock = self.clock.update(request.clock)
@@ -46,7 +46,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         if status != 0:
             print("error, status: " + str(status))
 
-        self.document.get_logger().print_log()
+        # self.document.get_logger().print_log()
         content = self.document.get_content()
         print(content)
         return CommandStatus(status=status, content=content)
@@ -70,7 +70,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
             print(f"waiting for {ip}:{port} synchronization confirmation")
             stub = editor_pb2_grpc.EditorStub(channel)
             try:
-                response = stub.AreYouReady(SyncConfirmation(answer=True))
+                response = stub.AreYouReady(SyncConfirmation(answer=True), timeout=10)
                 if response.answer:
                     print(f"{ip}:{port} synchronized successfully")
                 else:
@@ -86,7 +86,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         self.__broadcast_t.unlock()
 
     def AreYouReady(self, request, context):
-        print(f"i am ready {self.me}")
         return SyncConfirmation(answer=True)
 
     def __handle_server_request(self, request, local_clock):
@@ -94,7 +93,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         cmd = Cmd(request.operation, request.position, request.id, request_clock, request.char)
         for cmd1 in self.document.get_log():
             if cmd.who() == cmd1.who() and cmd.when() == cmd1.when():
-                print(f"duplicated for {cmd}")
+                self.node_lock.release()
                 return 0
 
         if request_clock <= local_clock:
@@ -138,16 +137,12 @@ class Broadcast(threading.Thread):
         self.__broadcast_lock = threading.Lock()
 
     def enqueue(self, request, local_clock, sender, node: Node, active_nodes):
-        print(f"enqueueing: {Cmd(request.operation, request.position, request.id, local_clock, request.char)}")
         self.__cmds.put((request, local_clock, sender, node, active_nodes))
 
     def lock(self):
-        print("Acquiring broadcast lock")
-        self.__broadcast_lock.acquire(blocking=True, timeout=5)
-        print("Broadcast lock acquired")
+        self.__broadcast_lock.acquire(blocking=True, timeout=2)
 
     def unlock(self):
-        print("Releasing broadcast lock")
         self.__broadcast_lock.release()
 
     def run(self):
@@ -155,7 +150,6 @@ class Broadcast(threading.Thread):
             cmd_info = self.__cmds.get()
             self.lock()
             request = cmd_info[0]
-            print(f"broadcasting: {Cmd(request.operation, request.position, request.id, cmd_info[1], request.char)}")
             self.__broadcast(cmd_info)
             self.unlock()
 
@@ -163,9 +157,7 @@ class Broadcast(threading.Thread):
     def __broadcast(cmd_info):
         request, local_clock, sender, node, active_nodes = cmd_info
         status = 0
-        print(f"active nodes: {active_nodes}")
         for (ip, port) in active_nodes - {sender}:
-            print(f"to {port}")
             with grpc.insecure_channel(f"{ip}:{port}") as channel:
                 stub = editor_pb2_grpc.EditorStub(channel)
                 try:
@@ -191,7 +183,7 @@ def sigint_handler(sig, frame, editor):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     ip, port = (sys.argv[1], sys.argv[2])
     editor = Editor(ip, port)
     signal.signal(signal.SIGINT, partial(sigint_handler, editor=editor))
