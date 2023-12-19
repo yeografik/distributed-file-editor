@@ -7,7 +7,7 @@ from protos.generated import editor_pb2_grpc
 from doc import Document
 from clock import Clock
 from command import Command as Cmd
-from src.protos.generated.editor_pb2 import NodeInfo, FileInfo
+from protos.generated.editor_pb2 import NodeInfo, FileInfo
 
 
 class Node:
