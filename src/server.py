@@ -60,10 +60,8 @@ class Editor(editor_pb2_grpc.EditorServicer):
             return editor_pb2.NotifyResponse(status=True, clock=self.clock.get())
 
     def RequestContent(self, request, context):
-        print("acquiring join lock")
-        join_lock.acquire(blocking=True, timeout=5)
-        print("join lock acquired")
-        self.node_lock.acquire(blocking=True, timeout=5)
+        self.node_lock.acquire()
+        self.__broadcast_t.lock()
         return editor_pb2.Content(content=self.document.get_content())
 
     def RequestLog(self, request, context):
@@ -86,8 +84,8 @@ class Editor(editor_pb2_grpc.EditorServicer):
                     print("Timeout in synchronization")
                 else:
                     raise e
+        self.__broadcast_t.unlock()
         self.node_lock.release()
-        join_lock.release()
 
     def AreYouReady(self, request, context):
         print(f"i am ready {self.me}")
@@ -135,19 +133,26 @@ class Broadcast(threading.Thread):
     def __init__(self):
         super().__init__()
         self.__cmds = queue.Queue()
+        self.__broadcast_lock = threading.Lock()
 
     def enqueue(self, request, local_clock, sender, node: Node, active_nodes):
         print(f"enqueueing: {Cmd(request.operation, request.position, request.id, local_clock, request.char)}")
         self.__cmds.put((request, local_clock, sender, node, active_nodes))
 
+    def lock(self):
+        self.__broadcast_lock.acquire()
+
+    def unlock(self):
+        self.__broadcast_lock.release()
+
     def run(self):
         while True:
             cmd_info = self.__cmds.get()
-            join_lock.acquire()
+            self.__broadcast_lock.acquire()
             request = cmd_info[0]
             print(f"broadcasting: {Cmd(request.operation, request.position, request.id, cmd_info[1], request.char)}")
             self.__broadcast(cmd_info)
-            join_lock.release()
+            self.__broadcast_lock.release()
 
     @staticmethod
     def __broadcast(cmd_info):
@@ -181,7 +186,7 @@ def sigint_handler(sig, frame, editor):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     ip, port = (sys.argv[1], sys.argv[2])
     editor = Editor(ip, port)
     signal.signal(signal.SIGINT, partial(sigint_handler, editor=editor))

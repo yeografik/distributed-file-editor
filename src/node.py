@@ -96,6 +96,7 @@ class Node:
     def __request_data_to(self, node):
         ip, port = node
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
+            print(f"requesting data to {ip}:{port}")
             stub = editor_pb2_grpc.EditorStub(channel)
             response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
             content = response.content
