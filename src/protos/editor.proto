@@ -55,6 +55,7 @@ message Command {
 // The response message containing the operation status
 message CommandStatus {
     uint32 status = 1;
+    string content = 2;
 }
 
 message NodeInfo {

@@ -36,10 +36,12 @@ class Command(_message.Message):
     def __init__(self, operation: _Optional[_Union[Operation, str]] = ..., position: _Optional[int] = ..., id: _Optional[int] = ..., transmitter: _Optional[_Union[Transmitter, str]] = ..., char: _Optional[str] = ..., clock: _Optional[int] = ...) -> None: ...
 
 class CommandStatus(_message.Message):
-    __slots__ = ["status"]
+    __slots__ = ["status", "content"]
     STATUS_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
     status: int
-    def __init__(self, status: _Optional[int] = ...) -> None: ...
+    content: str
+    def __init__(self, status: _Optional[int] = ..., content: _Optional[str] = ...) -> None: ...
 
 class NodeInfo(_message.Message):
     __slots__ = ["ip", "port"]

@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x65\x64itor.proto\x12\x06\x65\x64itor\"\xbd\x01\n\x07\x43ommand\x12$\n\toperation\x18\x01 \x01(\x0e\x32\x11.editor.Operation\x12\x10\n\x08position\x18\x02 \x01(\r\x12\x0f\n\x02id\x18\x03 \x01(\rH\x00\x88\x01\x01\x12(\n\x0btransmitter\x18\x04 \x01(\x0e\x32\x13.editor.Transmitter\x12\x11\n\x04\x63har\x18\x05 \x01(\tH\x01\x88\x01\x01\x12\x12\n\x05\x63lock\x18\x06 \x01(\rH\x02\x88\x01\x01\x42\x05\n\x03_idB\x07\n\x05_charB\x08\n\x06_clock\"\x1f\n\rCommandStatus\x12\x0e\n\x06status\x18\x01 \x01(\r\"$\n\x08NodeInfo\x12\n\n\x02ip\x18\x01 \x01(\t\x12\x0c\n\x04port\x18\x02 \x01(\t\"/\n\x0eNotifyResponse\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12\r\n\x05\x63lock\x18\x02 \x01(\x05\"\x1d\n\x08\x46ileInfo\x12\x11\n\tfile_name\x18\x01 \x01(\t\"\x1a\n\x07\x43ontent\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t*\x1d\n\tOperation\x12\x07\n\x03INS\x10\x00\x12\x07\n\x03\x44\x45L\x10\x01*#\n\x0bTransmitter\x12\x08\n\x04USER\x10\x00\x12\n\n\x06SERVER\x10\x01\x32\xe3\x01\n\x06\x45\x64itor\x12\x37\n\x0bSendCommand\x12\x0f.editor.Command\x1a\x15.editor.CommandStatus\"\x00\x12\x34\n\x06Notify\x12\x10.editor.NodeInfo\x1a\x16.editor.NotifyResponse\"\x00\x12\x35\n\x0eRequestContent\x12\x10.editor.FileInfo\x1a\x0f.editor.Content\"\x00\x12\x33\n\nRequestLog\x12\x10.editor.FileInfo\x1a\x0f.editor.Command\"\x00\x30\x01\x42\x06\xa2\x02\x03\x45\x44Tb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0c\x65\x64itor.proto\x12\x06\x65\x64itor\"\xbd\x01\n\x07\x43ommand\x12$\n\toperation\x18\x01 \x01(\x0e\x32\x11.editor.Operation\x12\x10\n\x08position\x18\x02 \x01(\r\x12\x0f\n\x02id\x18\x03 \x01(\rH\x00\x88\x01\x01\x12(\n\x0btransmitter\x18\x04 \x01(\x0e\x32\x13.editor.Transmitter\x12\x11\n\x04\x63har\x18\x05 \x01(\tH\x01\x88\x01\x01\x12\x12\n\x05\x63lock\x18\x06 \x01(\rH\x02\x88\x01\x01\x42\x05\n\x03_idB\x07\n\x05_charB\x08\n\x06_clock\"0\n\rCommandStatus\x12\x0e\n\x06status\x18\x01 \x01(\r\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\"$\n\x08NodeInfo\x12\n\n\x02ip\x18\x01 \x01(\t\x12\x0c\n\x04port\x18\x02 \x01(\t\"/\n\x0eNotifyResponse\x12\x0e\n\x06status\x18\x01 \x01(\x08\x12\r\n\x05\x63lock\x18\x02 \x01(\x05\"\x1d\n\x08\x46ileInfo\x12\x11\n\tfile_name\x18\x01 \x01(\t\"\x1a\n\x07\x43ontent\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t*\x1d\n\tOperation\x12\x07\n\x03INS\x10\x00\x12\x07\n\x03\x44\x45L\x10\x01*#\n\x0bTransmitter\x12\x08\n\x04USER\x10\x00\x12\n\n\x06SERVER\x10\x01\x32\xe3\x01\n\x06\x45\x64itor\x12\x37\n\x0bSendCommand\x12\x0f.editor.Command\x1a\x15.editor.CommandStatus\"\x00\x12\x34\n\x06Notify\x12\x10.editor.NodeInfo\x1a\x16.editor.NotifyResponse\"\x00\x12\x35\n\x0eRequestContent\x12\x10.editor.FileInfo\x1a\x0f.editor.Content\"\x00\x12\x33\n\nRequestLog\x12\x10.editor.FileInfo\x1a\x0f.editor.Command\"\x00\x30\x01\x42\x06\xa2\x02\x03\x45\x44Tb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -21,22 +21,22 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'editor_pb2', _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\242\002\003EDT'
-  _globals['_OPERATION']._serialized_start=395
-  _globals['_OPERATION']._serialized_end=424
-  _globals['_TRANSMITTER']._serialized_start=426
-  _globals['_TRANSMITTER']._serialized_end=461
+  _globals['_OPERATION']._serialized_start=412
+  _globals['_OPERATION']._serialized_end=441
+  _globals['_TRANSMITTER']._serialized_start=443
+  _globals['_TRANSMITTER']._serialized_end=478
   _globals['_COMMAND']._serialized_start=25
   _globals['_COMMAND']._serialized_end=214
   _globals['_COMMANDSTATUS']._serialized_start=216
-  _globals['_COMMANDSTATUS']._serialized_end=247
-  _globals['_NODEINFO']._serialized_start=249
-  _globals['_NODEINFO']._serialized_end=285
-  _globals['_NOTIFYRESPONSE']._serialized_start=287
-  _globals['_NOTIFYRESPONSE']._serialized_end=334
-  _globals['_FILEINFO']._serialized_start=336
-  _globals['_FILEINFO']._serialized_end=365
-  _globals['_CONTENT']._serialized_start=367
-  _globals['_CONTENT']._serialized_end=393
-  _globals['_EDITOR']._serialized_start=464
-  _globals['_EDITOR']._serialized_end=691
+  _globals['_COMMANDSTATUS']._serialized_end=264
+  _globals['_NODEINFO']._serialized_start=266
+  _globals['_NODEINFO']._serialized_end=302
+  _globals['_NOTIFYRESPONSE']._serialized_start=304
+  _globals['_NOTIFYRESPONSE']._serialized_end=351
+  _globals['_FILEINFO']._serialized_start=353
+  _globals['_FILEINFO']._serialized_end=382
+  _globals['_CONTENT']._serialized_start=384
+  _globals['_CONTENT']._serialized_end=410
+  _globals['_EDITOR']._serialized_start=481
+  _globals['_EDITOR']._serialized_end=708
 # @@protoc_insertion_point(module_scope)

@@ -61,6 +61,7 @@ def run():
             timestamp += 1
             if response.status != 0:
                 print("operation unsuccessful")
+            print(f"Content: {response.content}\n")
 
 
 if __name__ == "__main__":

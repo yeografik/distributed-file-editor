@@ -32,7 +32,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         self.node_lock.acquire(blocking=True, timeout=-1)
-        print(f"receiving: from: ({request.operation},{request.position},{request.char}) {request.transmitter} in time: {request.clock}")
+        print(f"receiving: from: {request.id} ({request.operation},{request.position},{request.char}) {request.transmitter} in time: {request.clock}")
         local_clock = self.clock.update(request.clock)
         if request.transmitter == SERVER:
             status = self.__handle_server_request(request, local_clock)
@@ -45,8 +45,9 @@ class Editor(editor_pb2_grpc.EditorServicer):
             print("error, status: " + str(status))
 
         self.document.get_logger().print_log()
-        print(self.document.get_content())
-        return editor_pb2.CommandStatus(status=status)
+        content = self.document.get_content()
+        print(content)
+        return editor_pb2.CommandStatus(status=status, content=content)
 
     def Notify(self, request, context):
         with self.node_lock:
