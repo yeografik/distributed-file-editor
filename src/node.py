@@ -41,7 +41,7 @@ class Node:
             best_log = []
             content_to_load = ""
             node1 = None
-            self.sync_lock.acquire(blocking=True, timeout=-1)
+            self.sync_lock.acquire()
             print("sync lock acquired")
             for node in self.active_nodes:
                 content, log = self.__request_data_to(node)

@@ -72,7 +72,9 @@ class Editor(editor_pb2_grpc.EditorServicer):
             stub = editor_pb2_grpc.EditorStub(channel)
             try:
                 response = stub.AreYouReady(SyncConfirmation(answer=True))
-                if not response.answer:
+                if response.answer:
+                    print(f"{ip}:{port} synchronized successfully")
+                else:
                     raise Exception("Fail to synchronize")
             except Exception as e:
                 rpc_state = e.args[0]
@@ -138,19 +140,22 @@ class Broadcast(threading.Thread):
         self.__cmds.put((request, local_clock, sender, node, active_nodes))
 
     def lock(self):
+        print("Acquiring broadcast lock")
         self.__broadcast_lock.acquire()
+        print("Broadcast lock acquired")
 
     def unlock(self):
+        print("Releasing broadcast lock")
         self.__broadcast_lock.release()
 
     def run(self):
         while True:
             cmd_info = self.__cmds.get()
-            self.__broadcast_lock.acquire()
+            self.lock()
             request = cmd_info[0]
             print(f"broadcasting: {Cmd(request.operation, request.position, request.id, cmd_info[1], request.char)}")
             self.__broadcast(cmd_info)
-            self.__broadcast_lock.release()
+            self.unlock()
 
     @staticmethod
     def __broadcast(cmd_info):
@@ -184,7 +189,7 @@ def sigint_handler(sig, frame, editor):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
     ip, port = (sys.argv[1], sys.argv[2])
     editor = Editor(ip, port)
     signal.signal(signal.SIGINT, partial(sigint_handler, editor=editor))
