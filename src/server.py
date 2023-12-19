@@ -16,8 +16,6 @@ from clock import Clock
 from command import Command as Cmd
 from functools import partial
 
-join_lock = threading.Lock()
-
 
 class Editor(editor_pb2_grpc.EditorServicer):
 
