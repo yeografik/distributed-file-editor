@@ -16,6 +16,8 @@ from clock import Clock
 from command import Command as Cmd
 from functools import partial
 
+join_lock = threading.Lock()
+
 
 class Editor(editor_pb2_grpc.EditorServicer):
 
@@ -32,7 +34,8 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         self.node_lock.acquire(blocking=True, timeout=-1)
-        print(f"receiving: from: {request.id} ({request.operation},{request.position},{request.char}) {request.transmitter} in time: {request.clock}")
+        print(
+            f"receiving: from: {request.id} ({request.operation},{request.position},{request.char}) {request.transmitter} in time: {request.clock}")
         local_clock = self.clock.update(request.clock)
         if request.transmitter == SERVER:
             status = self.__handle_server_request(request, local_clock)
@@ -57,6 +60,9 @@ class Editor(editor_pb2_grpc.EditorServicer):
             return editor_pb2.NotifyResponse(status=True, clock=self.clock.get())
 
     def RequestContent(self, request, context):
+        print("acquiring join lock")
+        join_lock.acquire(blocking=True, timeout=5)
+        print("join lock acquired")
         self.node_lock.acquire(blocking=True, timeout=5)
         return editor_pb2.Content(content=self.document.get_content())
 
@@ -64,7 +70,28 @@ class Editor(editor_pb2_grpc.EditorServicer):
         for log in self.document.get_log():
             yield editor_pb2.Command(operation=log.operation(), position=log.position(), char=log.elem(),
                                      clock=log.when(), id=log.who(), transmitter=SERVER)
+        ip, port = request.ip, request.port
+        with grpc.insecure_channel(f"{ip}:{port}") as channel:
+            print(f"waiting for {ip}:{port} synchronization confirmation")
+            stub = editor_pb2_grpc.EditorStub(channel)
+            try:
+                response = stub.AreYouReady(SyncConfirmation(answer=True))
+                if not response.answer:
+                    raise Exception("Fail to synchronize")
+            except Exception as e:
+                rpc_state = e.args[0]
+                if rpc_state.code == StatusCode.UNAVAILABLE:
+                    print(f"node {ip}:{port} is down (StatusCode.UNAVAILABLE)")
+                elif rpc_state.code == StatusCode.DEADLINE_EXCEEDED:
+                    print("Timeout in synchronization")
+                else:
+                    raise e
         self.node_lock.release()
+        join_lock.release()
+
+    def AreYouReady(self, request, context):
+        print(f"i am ready {self.me}")
+        return SyncConfirmation(answer=True)
 
     def __handle_server_request(self, request, local_clock):
         request_clock = request.clock - 1  # Who execute the cmd of the request made it with clock-1
@@ -116,9 +143,11 @@ class Broadcast(threading.Thread):
     def run(self):
         while True:
             cmd_info = self.__cmds.get()
+            join_lock.acquire()
             request = cmd_info[0]
             print(f"broadcasting: {Cmd(request.operation, request.position, request.id, cmd_info[1], request.char)}")
             self.__broadcast(cmd_info)
+            join_lock.release()
 
     @staticmethod
     def __broadcast(cmd_info):
@@ -138,7 +167,7 @@ class Broadcast(threading.Thread):
                 except Exception as e:
                     rpc_state = e.args[0]
                     if rpc_state.code == StatusCode.UNAVAILABLE:
-                        print(f"node: {ip}:{port} is down, exception: {e}")
+                        print(f"node {ip}:{port} is down")
                         node.remove_active_node(ip, port)
                     elif rpc_state.code == StatusCode.DEADLINE_EXCEEDED:
                         print("Timeout in broadcast")

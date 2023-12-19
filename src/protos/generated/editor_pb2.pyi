@@ -60,13 +60,23 @@ class NotifyResponse(_message.Message):
     def __init__(self, status: bool = ..., clock: _Optional[int] = ...) -> None: ...
 
 class FileInfo(_message.Message):
-    __slots__ = ["file_name"]
+    __slots__ = ["file_name", "ip", "port"]
     FILE_NAME_FIELD_NUMBER: _ClassVar[int]
+    IP_FIELD_NUMBER: _ClassVar[int]
+    PORT_FIELD_NUMBER: _ClassVar[int]
     file_name: str
-    def __init__(self, file_name: _Optional[str] = ...) -> None: ...
+    ip: str
+    port: int
+    def __init__(self, file_name: _Optional[str] = ..., ip: _Optional[str] = ..., port: _Optional[int] = ...) -> None: ...
 
 class Content(_message.Message):
     __slots__ = ["content"]
     CONTENT_FIELD_NUMBER: _ClassVar[int]
     content: str
     def __init__(self, content: _Optional[str] = ...) -> None: ...
+
+class SyncConfirmation(_message.Message):
+    __slots__ = ["answer"]
+    ANSWER_FIELD_NUMBER: _ClassVar[int]
+    answer: bool
+    def __init__(self, answer: bool = ...) -> None: ...

@@ -35,6 +35,11 @@ class EditorStub(object):
                 request_serializer=editor__pb2.FileInfo.SerializeToString,
                 response_deserializer=editor__pb2.Command.FromString,
                 )
+        self.AreYouReady = channel.unary_unary(
+                '/editor.Editor/AreYouReady',
+                request_serializer=editor__pb2.SyncConfirmation.SerializeToString,
+                response_deserializer=editor__pb2.SyncConfirmation.FromString,
+                )
 
 
 class EditorServicer(object):
@@ -69,6 +74,12 @@ class EditorServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def AreYouReady(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_EditorServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -91,6 +102,11 @@ def add_EditorServicer_to_server(servicer, server):
                     servicer.RequestLog,
                     request_deserializer=editor__pb2.FileInfo.FromString,
                     response_serializer=editor__pb2.Command.SerializeToString,
+            ),
+            'AreYouReady': grpc.unary_unary_rpc_method_handler(
+                    servicer.AreYouReady,
+                    request_deserializer=editor__pb2.SyncConfirmation.FromString,
+                    response_serializer=editor__pb2.SyncConfirmation.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -168,5 +184,22 @@ class Editor(object):
         return grpc.experimental.unary_stream(request, target, '/editor.Editor/RequestLog',
             editor__pb2.FileInfo.SerializeToString,
             editor__pb2.Command.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AreYouReady(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/editor.Editor/AreYouReady',
+            editor__pb2.SyncConfirmation.SerializeToString,
+            editor__pb2.SyncConfirmation.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

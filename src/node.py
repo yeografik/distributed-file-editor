@@ -1,4 +1,5 @@
 import json
+import threading
 
 import grpc
 from grpc import StatusCode
@@ -17,6 +18,7 @@ class Node:
         self.document = document
         self.clock = clock
         self.me = me
+        self.sync_lock = threading.Lock()
         self.load_server_nodes()
         self.notify_nodes()
         self.load_data()
@@ -36,10 +38,25 @@ class Node:
             self.__read_local_file_content()
             print(f"Content loaded from local file for {self.me}")
         else:
-            node = next(iter(self.active_nodes))
-            self.__request_data_to(node)
-            ip, port = node
+            best_log = []
+            content_to_load = ""
+            node1 = None
+            self.sync_lock.acquire(blocking=True, timeout=-1)
+            print("sync lock acquired")
+            for node in self.active_nodes:
+                content, log = self.__request_data_to(node)
+                if len(log) >= len(best_log):  # FIXME: Maybe we should check more things
+                    best_log = log
+                    content_to_load = content
+                    node1 = node
+            self.document.set_content(content_to_load)
+            logger = self.document.get_logger()
+            for cmd in best_log:
+                logger.log(cmd)
+            ip, port = node1
             print(f"Data loaded from node: {ip}:{port}, for {self.me}")
+            self.sync_lock.release()
+            print("releasing sync lock")
 
         self.document.get_logger().print_log()
         print(f"Content for {self.me}: " + self.document.get_content())
@@ -81,11 +98,12 @@ class Node:
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
             response = stub.RequestContent(editor_pb2.FileInfo(file_name="file.txt"))
-            # TODO: now we have one file, in the future the user could want to access to other files
-            self.document.set_content(response.content)
-            logger = self.document.get_logger()
-            for cmd in stub.RequestLog(editor_pb2.FileInfo(file_name="file.txt")):
-                logger.log(Cmd(cmd.operation, cmd.position, cmd.id, cmd.clock, cmd.char))
+            content = response.content
+            log = []
+            for cmd in stub.RequestLog(editor_pb2.FileInfo(file_name="file.txt", ip=self.me[0], port=int(self.me[1]))):
+                log.append(Cmd(cmd.operation, cmd.position, cmd.id, cmd.clock, cmd.char))
+
+            return content, log
 
     def __read_local_file_content(self):
         with open("file.txt", 'a+') as f:

@@ -31,6 +31,8 @@ service Editor {
 
     // Request the log of the file
     rpc RequestLog(FileInfo) returns (stream Command) {}
+
+    rpc AreYouReady(SyncConfirmation) returns (SyncConfirmation) {}
 }
 
 enum Operation {
@@ -70,8 +72,14 @@ message NotifyResponse {
 
 message FileInfo {
     string file_name = 1;
+    string ip = 2;
+    int32 port = 3;
 }
 
 message Content {
     string content = 1;
+}
+
+message SyncConfirmation {
+    bool answer = 1;
 }
