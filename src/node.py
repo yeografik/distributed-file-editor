@@ -34,15 +34,15 @@ class Node:
     def load_data(self):
         if not self.active_nodes:
             self.__read_local_file_content()
-            print("Content loaded from local file")
+            print(f"Content loaded from local file for {self.me}")
         else:
             node = next(iter(self.active_nodes))
             self.__request_data_to(node)
             ip, port = node
-            print(f"Data loaded from node: {ip}:{port}")
+            print(f"Data loaded from node: {ip}:{port}, for {self.me}")
 
         self.document.get_logger().print_log()
-        print("Content: " + self.document.get_content())
+        print(f"Content for {self.me}: " + self.document.get_content())
 
     def get_active_nodes(self):
         return self.active_nodes

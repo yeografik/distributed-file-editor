@@ -52,6 +52,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
     def Notify(self, request, context):
         with self.node_lock:
             node = (request.ip, request.port)
+            print(f"adding server {request.port}")
             self.node.add_active_node(node)
             return editor_pb2.NotifyResponse(status=True, clock=self.clock.get())
 
@@ -68,6 +69,11 @@ class Editor(editor_pb2_grpc.EditorServicer):
     def __handle_server_request(self, request, local_clock):
         request_clock = request.clock - 1  # Who execute the cmd of the request made it with clock-1
         cmd = Cmd(request.operation, request.position, request.id, request_clock, request.char)
+        for cmd1 in self.document.get_log():
+            if cmd.who() == cmd1.who() and cmd.when() == cmd1.when():
+                print(f"duplicated for {cmd}")
+                return 0
+
         if request_clock <= local_clock:
             self.document.do_rollback(request_clock, request.id)
             status = self.document.apply(cmd)
@@ -118,7 +124,9 @@ class Broadcast(threading.Thread):
     def __broadcast(cmd_info):
         request, local_clock, sender, node, active_nodes = cmd_info
         status = 0
+        print(f"active nodes: {active_nodes}")
         for (ip, port) in active_nodes - {sender}:
+            print(f"to {port}")
             with grpc.insecure_channel(f"{ip}:{port}") as channel:
                 stub = editor_pb2_grpc.EditorStub(channel)
                 try:
@@ -130,7 +138,7 @@ class Broadcast(threading.Thread):
                 except Exception as e:
                     rpc_state = e.args[0]
                     if rpc_state.code == StatusCode.UNAVAILABLE:
-                        print(f"node: {ip}:{port} is down")
+                        print(f"node: {ip}:{port} is down, exception: {e}")
                         node.remove_active_node(ip, port)
                     elif rpc_state.code == StatusCode.DEADLINE_EXCEEDED:
                         print("Timeout in broadcast")
