@@ -89,7 +89,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         status = self.document.apply(cmd)
         if status == 0:
             local_clock = self.clock.increase()
-            current_active_nodes = self.node.get_active_nodes().copy()
+            current_active_nodes = self.node.server_nodes
             self.__broadcast_t.enqueue(request, local_clock, self.me, self.node, current_active_nodes)
             self.node_lock.release()
         else:

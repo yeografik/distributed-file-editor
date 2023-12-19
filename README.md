@@ -7,7 +7,13 @@ edicion en tiempo real de archivos.*
 
 **Gonzalez Ignacio - Nolasco Agustin**
 
+### Requirements
+
+Tener instalada python3.8 o una version mas nueva. Tener instalado y actualizado pip3.
+
 ### Setup
+
+`pip3 install virtualenv`
 
 `virtualenv venv`
 
@@ -20,6 +26,7 @@ utilizar el sistema.
 
 ### How to use
 
+0. Pararse en el directorio ```src```
 1. En el archivo ```nodes.js``` se encuentra la informacion
 acerca de los nodos que conforman la red. Esta puede ser modificada
 segun se requiera para agregar o quitar nuevos nodos.
