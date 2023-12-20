@@ -4,6 +4,7 @@ import threading
 from concurrent import futures
 import logging
 import signal
+from time import sleep
 
 import grpc
 from grpc import StatusCode
@@ -117,6 +118,8 @@ class Editor(editor_pb2_grpc.EditorServicer):
         print("\nctrl+c pressed")
         with open("file.txt", 'w') as f:
             f.write(self.document.get_content())
+        while not self.__broadcast_t.stop():
+            sleep(0.5)
         sys.exit(0)
 
 
@@ -126,6 +129,14 @@ class Broadcast(threading.Thread):
         super().__init__()
         self.__cmds = queue.Queue()
         self.__broadcast_lock = threading.Lock()
+        self.__stop = False
+
+    def stop(self):
+        if self.__cmds.qsize() == 0:
+            self.__stop = True
+            self.__cmds.put(None)  # This is only for unlock in run method
+            return True
+        return False
 
     def enqueue(self, request, local_clock, sender, node: Node, active_nodes):
         self.__cmds.put((request, local_clock, sender, node, active_nodes))
@@ -139,6 +150,8 @@ class Broadcast(threading.Thread):
     def run(self):
         while True:
             cmd_info = self.__cmds.get()
+            if self.__stop:
+                return
             self.lock()
             self.__broadcast(cmd_info)
             self.unlock()
