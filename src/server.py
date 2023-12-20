@@ -7,7 +7,6 @@ import signal
 
 import grpc
 from grpc import StatusCode
-from protos.generated import editor_pb2
 from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
 from doc import Document
@@ -41,6 +40,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         else:
             print(f"Couldn't handle request, unknown transmitter: {request.transmitter}")
             status = 1
+        self.node_lock.release()
         if status != 0:
             print("error, status: " + str(status))
 
@@ -70,11 +70,11 @@ class Editor(editor_pb2_grpc.EditorServicer):
                 if response.answer:
                     print(f"{ip}:{port} synchronized successfully")
                 else:
-                    raise Exception("Fail to synchronize")
+                    raise Exception(f"{ip}:{port} fails to synchronize")
             except Exception as e:
                 rpc_state = e.args[0]
                 if rpc_state.code == StatusCode.UNAVAILABLE:
-                    print(f"node {ip}:{port} is down (StatusCode.UNAVAILABLE)")
+                    print(f"node {ip}:{port} is down")
                 elif rpc_state.code == StatusCode.DEADLINE_EXCEEDED:
                     print("Timeout in synchronization")
                 else:
@@ -89,7 +89,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         cmd = Cmd(request.operation, request.position, request.id, request_clock, request.char)
         for cmd1 in self.document.get_log():
             if cmd.who() == cmd1.who() and cmd.when() == cmd1.when():
-                self.node_lock.release()
                 return 0
 
         if request_clock <= local_clock:
@@ -99,7 +98,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         else:
             status = self.document.apply(cmd)
 
-        self.node_lock.release()
         return status
 
     def __handle_user_request(self, request, local_clock):
@@ -109,9 +107,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
             local_clock = self.clock.increase()
             current_active_nodes = self.node.server_nodes
             self.__broadcast_t.enqueue(request, local_clock, self.me, self.node, current_active_nodes)
-            self.node_lock.release()
-        else:
-            self.node_lock.release()
         return status
 
     def load_data(self):
