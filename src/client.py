@@ -8,7 +8,7 @@ from protos.generated.editor_pb2 import *
 
 argv = len(sys.argv)
 if argv != 3:
-    print("Usage: python3 app.py 'ip' 'port' 'cmd' 'pos'")
+    print("Usage: python3 client.py 'ip' 'port' 'cmd' 'pos'")
     exit()
 
 ip = sys.argv[1]
