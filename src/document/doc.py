@@ -1,5 +1,5 @@
-from logger import Logger
-from command import Command
+from document.logger import Logger
+from document.command import Command
 
 
 class Document:

@@ -4,9 +4,9 @@ import threading
 import grpc
 from grpc import StatusCode
 from protos.generated import editor_pb2_grpc
-from doc import Document
-from clock import Clock
-from command import Command as Cmd
+from document.doc import Document
+from infrastructure.clock import Clock
+from document.command import Command as Cmd
 from protos.generated.editor_pb2 import NodeInfo, FileInfo
 
 
@@ -23,7 +23,7 @@ class Node:
         self.notify_nodes()
 
     def load_server_nodes(self):
-        with open("nodes.json") as f:
+        with open("infrastructure/config/nodes.json") as f:
             data = json.load(f)
             for node in data['nodes']:
                 self.server_nodes.add((node['ip'], node['port']))
@@ -97,16 +97,16 @@ class Node:
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             print(f"requesting data to {ip}:{port}")
             stub = editor_pb2_grpc.EditorStub(channel)
-            response = stub.RequestContent(FileInfo(file_name="file.txt"))
+            response = stub.RequestContent(FileInfo(file_name="document/file.txt"))
             content = response.content
             log = []
-            for cmd in stub.RequestLog(FileInfo(file_name="file.txt", ip=self.me[0], port=int(self.me[1]))):
+            for cmd in stub.RequestLog(FileInfo(file_name="document/file.txt", ip=self.me[0], port=int(self.me[1]))):
                 log.append(Cmd(cmd.operation, cmd.position, cmd.id, cmd.clock, cmd.char))
 
             return content, log
 
     def __read_local_file_content(self):
-        with open("file.txt", 'a+') as f:
+        with open("document/file.txt", 'a+') as f:
             f.seek(0)
             file_content = f.read().strip()
             return self.document.set_content(file_content)

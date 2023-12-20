@@ -1,4 +1,4 @@
-from command import Command
+from document.command import Command
 from typing import List
 
 
