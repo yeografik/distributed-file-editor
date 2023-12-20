@@ -26,7 +26,7 @@ utilizar el sistema.
 
 ### How to use
 
-0. Pararse en el directorio ```src```
+0. Pararse en el directorio ```src/```.
 1. En el archivo ```nodes.js``` se encuentra la información acerca de 
 los nodos que conforman la red. Esta puede ser modificada según se requiera
 para agregar o quitar nuevos nodos, cabe destacar que es necesario que los
@@ -38,13 +38,26 @@ iniciarlos ejecutando ```python3 server.py [ip] [port]```, por ejemplo
 cada uno de los nodos definidos en nodes.js. ```nodes.js```.
 3. Una vez levantados los nodos deseados se puede proceder a realizar conexión 
 de la aplicación con alguno de los mismos, para ellos se debera ejecutar python3 
-```python3 client.py [ip] [port]```, por ejemplo ```python3 client.py localhost 5001```
+```python3 client.py [ip] [port]```, por ejemplo ```python3 client.py localhost 5001```.
 
 Nota: los nodos pueden irse levantando mientras se va usando la aplicación, 
 lo importante es que siempre exista al menos uno para que los usuarios de 
 la aplicación puedan conectarse a él. Pero a medida que haya más nodos 
 conectados los usuarios de la aplicación podrán conectarse a los distintos 
 nodos y editar en conjunto el contenido del documento.
+
+#### scripts
+
+Para correr los scripts ubicados en ```src/scripts/```
+0. Pararse en ```src/```.
+1. En el archivo ```nodes.js``` setear 6 nodos, con los puertos 5001, 5002, 
+5003, 5004, 5005 y 5006.
+2. Iniciar los nodos ejecutando ```python3 server.py localhost [port]``` con los 
+puertos 5001, 5002, 5003, 5004, 5005 y sus respectivas ip.
+3. Finalmente ejecutar cualquiera de los scripts como ```./scripts/[script_name].sh```,
+en casos de querer correr ```scripts.sh```, se debera proveer como argumento un
+puerto.
+    
 
 ## Decisiones de implementación
 
