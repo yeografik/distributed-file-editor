@@ -9,10 +9,10 @@ import grpc
 from grpc import StatusCode
 from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
-from infrastructure.broadcast import Broadcast
+from server_components.broadcast_thread import Broadcast
 from document.doc import Document
-from infrastructure.node import Node
-from infrastructure.clock import Clock
+from server_components.node import Node
+from server_components.clock import Clock
 from document.command import Command as Cmd
 from functools import partial
 

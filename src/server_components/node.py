@@ -5,7 +5,7 @@ import grpc
 from grpc import StatusCode
 from protos.generated import editor_pb2_grpc
 from document.doc import Document
-from infrastructure.clock import Clock
+from server_components.clock import Clock
 from document.command import Command as Cmd
 from protos.generated.editor_pb2 import NodeInfo, FileInfo
 
@@ -23,7 +23,7 @@ class Node:
         self.notify_nodes()
 
     def load_server_nodes(self):
-        with open("infrastructure/config/nodes.json") as f:
+        with open("server_components/config/nodes.json") as f:
             data = json.load(f)
             for node in data['nodes']:
                 self.server_nodes.add((node['ip'], node['port']))

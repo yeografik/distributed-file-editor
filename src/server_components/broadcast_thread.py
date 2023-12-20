@@ -5,7 +5,7 @@ import grpc
 from grpc import StatusCode
 from protos.generated import editor_pb2_grpc
 from protos.generated.editor_pb2 import *
-from infrastructure.node import Node
+from server_components.node import Node
 
 
 class Broadcast(threading.Thread):
