@@ -4,3 +4,4 @@ src/protos/generated/__pycache__/
 src/*.txt
 src/__pycache__/
 file.txt
+src/**/__pycache__/
