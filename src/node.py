@@ -108,5 +108,5 @@ class Node:
     def __read_local_file_content(self):
         with open("file.txt", 'a+') as f:
             f.seek(0)
-            file_content = f.read()
+            file_content = f.read().strip()
             return self.document.set_content(file_content)

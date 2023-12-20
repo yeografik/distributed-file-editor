@@ -16,16 +16,30 @@ class Document:
     def get_log(self):
         return self.__logger.get_log()
 
+    def apply(self, cmd: Command):
+        try:
+            if cmd.is_insertion():
+                self.__insert_at(cmd.elem(), cmd.position())
+            elif cmd.is_deletion():
+                cmd.set_elem(self.__delete_at(cmd.position()))
+        except Exception as e:
+            print(e.args[0])
+            return 1
+
+        if self.__logging:
+            self.__logger.log(cmd)
+        return 0
+
     def __insert_at(self, char, idx):
         if len(char) != 1:
             raise Exception("Character should be inserted")
-        if idx not in range(0, len(self.__content) + 1):
-            raise Exception(f"insert {char} at {idx} - Index out of bound on '{self.__content}'")
+        if not 0 <= idx <= len(self.__content):
+            raise Exception(f"insert {char} at {idx} - Index out of bound")
         self.__content = self.__content[:idx] + char + self.__content[idx:]
 
     def __delete_at(self, idx):
-        if idx not in range(0, len(self.__content)):
-            raise Exception(f"delete at {idx} - Index out of bound on '{self.__content}'")
+        if not 0 <= idx < len(self.__content):
+            raise Exception(f"delete at {idx} - Index out of bound")
         char = self.__content[idx]
         assert len(char) == 1
         self.__content = self.__content[:idx] + self.__content[idx + 1:]
@@ -55,14 +69,3 @@ class Document:
             status += self.apply(cmd)
         self.__corrected_commands.clear()
         return status
-
-    def apply(self, cmd: Command):
-        # TODO: this operation could fail, a try catch statement should be used
-        if cmd.is_insertion():
-            self.__insert_at(cmd.elem(), cmd.position())
-        elif cmd.is_deletion():
-            cmd.set_elem(self.__delete_at(cmd.position()))
-
-        if self.__logging:
-            self.__logger.log(cmd)
-        return 0
