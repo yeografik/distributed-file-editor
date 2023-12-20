@@ -131,7 +131,7 @@ class Broadcast(threading.Thread):
         self.__cmds.put((request, local_clock, sender, node, active_nodes))
 
     def lock(self):
-        self.__broadcast_lock.acquire(blocking=True, timeout=2)
+        self.__broadcast_lock.acquire()
 
     def unlock(self):
         self.__broadcast_lock.release()
@@ -140,7 +140,6 @@ class Broadcast(threading.Thread):
         while True:
             cmd_info = self.__cmds.get()
             self.lock()
-            request = cmd_info[0]
             self.__broadcast(cmd_info)
             self.unlock()
 
