@@ -33,8 +33,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
 
     def SendCommand(self, request, context):
         self.node_lock.acquire()
-        print(
-            f"receiving: from: {request.id} ({request.operation},{request.position},{request.char}) {request.transmitter} in time: {request.clock}")
         local_clock = self.clock.update(request.clock)
         if request.transmitter == SERVER:
             status = self.__handle_server_request(request, local_clock)
@@ -46,7 +44,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         if status != 0:
             print("error, status: " + str(status))
 
-        # self.document.get_logger().print_log()
         content = self.document.get_content()
         print(content)
         return CommandStatus(status=status, content=content)
@@ -67,7 +64,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
                           clock=log.when(), id=log.who(), transmitter=SERVER)
         ip, port = request.ip, request.port
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
-            print(f"waiting for {ip}:{port} synchronization confirmation")
             stub = editor_pb2_grpc.EditorStub(channel)
             try:
                 response = stub.AreYouReady(SyncConfirmation(answer=True), timeout=10)
@@ -169,7 +165,6 @@ class Broadcast(threading.Thread):
                 except Exception as e:
                     rpc_state = e.args[0]
                     if rpc_state.code == StatusCode.UNAVAILABLE:
-                        print(f"node {ip}:{port} is down")
                         node.remove_active_node(ip, port)
                     elif rpc_state.code == StatusCode.DEADLINE_EXCEEDED:
                         print("Timeout in broadcast")

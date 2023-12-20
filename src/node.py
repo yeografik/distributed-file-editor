@@ -57,7 +57,7 @@ class Node:
             self.sync_lock.release()
             print("releasing sync lock")
 
-        # self.document.get_logger().print_log()
+        self.document.get_logger().print_log()
         print(f"Content for {self.me}: \n{self.document.get_content()}")
 
     def get_active_nodes(self):
