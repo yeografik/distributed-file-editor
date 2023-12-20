@@ -9,7 +9,8 @@ para la edición en tiempo real de archivos.
 
 ### Requirements
 
-Tener instalado python 3.8 o una versión más nueva. Tener instalado y actualizado pip3.
+* python 3.8 o una versión más nueva
+* pip3.
 
 ### Setup
 
@@ -24,7 +25,7 @@ Tener instalado python 3.8 o una versión más nueva. Tener instalado y actualiz
 De aquí en más siempre se deberá ingresar al ambiente virtual para 
 utilizar el sistema.
 
-### How to use
+## How to use
 
 0. Pararse en el directorio ```src/```.
 1. En el archivo ```nodes.js``` se encuentra la información acerca de 
@@ -46,16 +47,16 @@ la aplicación puedan conectarse a él. Pero a medida que haya más nodos
 conectados los usuarios de la aplicación podrán conectarse a los distintos 
 nodos y editar en conjunto el contenido del documento.
 
-#### scripts
+### Scripts
 
-Para correr los scripts ubicados en ```src/scripts/```
-0. Pararse en ```src/```.
-1. En el archivo ```nodes.js``` setear 6 nodos, con los puertos 5001, 5002, 
+Para correr los scripts ubicados en `src/scripts/`
+0. Pararse en `src/`.
+1. En el archivo `nodes.js` setear 6 nodos, con los puertos 5001, 5002, 
 5003, 5004, 5005 y 5006.
-2. Iniciar los nodos ejecutando ```python3 server.py localhost [port]``` con los 
-puertos 5001, 5002, 5003, 5004, 5005 y sus respectivas ip.
-3. Finalmente ejecutar cualquiera de los scripts como ```./scripts/[script_name].sh```,
-en casos de querer correr ```scripts.sh```, se debera proveer como argumento un
+2. Iniciar los nodos ejecutando `python3 server.py localhost [port]` con los 
+puertos 5001, 5002, 5003, 5004, 5005.
+3. Finalmente ejecutar cualquiera de los scripts como `./scripts/[script_name].sh`.
+En caso de querer correr `scripts.sh`, se debera proveer como argumento un
 puerto.
     
 
