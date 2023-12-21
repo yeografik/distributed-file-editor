@@ -45,6 +45,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
             print("error, status: " + str(status))
 
         content = self.document.get_content()
+        self.document.get_logger().print_log()
         print(content)
         return CommandStatus(status=status, content=content)
 
