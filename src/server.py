@@ -26,7 +26,6 @@ class Editor(editor_pb2_grpc.EditorServicer):
         self.clock = Clock()
         self.node = Node(self.me, self.document, self.clock)
         self.node_lock = threading.Lock()
-        self.cmd_to_broadcast = []
         self.__broadcast_t = Broadcast()
         self.__broadcast_t.start()
         self.node_lock.acquire()
@@ -67,7 +66,7 @@ class Editor(editor_pb2_grpc.EditorServicer):
         with grpc.insecure_channel(f"{ip}:{port}") as channel:
             stub = editor_pb2_grpc.EditorStub(channel)
             try:
-                response = stub.AreYouReady(SyncConfirmation(answer=True), timeout=10)
+                response = stub.AreYouReady(SyncConfirmation(answer=True))
                 if response.answer:
                     print(f"{ip}:{port} synchronized successfully")
                 else:
@@ -128,7 +127,7 @@ def sigint_handler(sig, frame, editor):
 
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     ip, port = (sys.argv[1], sys.argv[2])
     editor = Editor(ip, port)
     signal.signal(signal.SIGINT, partial(sigint_handler, editor=editor))

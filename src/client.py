@@ -52,13 +52,11 @@ def get_command():
 def run():
     with grpc.insecure_channel(f"{ip}:{port}") as channel:
         stub = editor_pb2_grpc.EditorStub(channel)
-        timestamp = 0
         while True:
             op, pos, char = get_command()
             command = Command(operation=op, position=pos, transmitter=USER, char=char)
             response = stub.SendCommand(command)
 
-            timestamp += 1
             if response.status != 0:
                 print("operation unsuccessful")
             print(f"Content: {response.content}\n")

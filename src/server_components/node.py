@@ -18,7 +18,6 @@ class Node:
         self.document = document
         self.clock = clock
         self.me = me
-        self.sync_lock = threading.Lock()
         self.load_server_nodes()
         self.notify_nodes()
 
@@ -40,7 +39,6 @@ class Node:
             best_log = []
             content_to_load = ""
             node1 = None
-            self.sync_lock.acquire()
             print("sync lock acquired")
             for node in self.active_nodes:
                 content, log = self.__request_data_to(node)
@@ -54,8 +52,6 @@ class Node:
                 logger.log(cmd)
             ip, port = node1
             print(f"Data loaded from node: {ip}:{port}, for {self.me}")
-            self.sync_lock.release()
-            print("releasing sync lock")
 
         self.document.get_logger().print_log()
         print(f"Content for {self.me}: \n{self.document.get_content()}")
